@@ -1,0 +1,12 @@
+namespace Domain.Entities
+{
+    public class Categoria
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public string IconoUrl { get; set; } = string.Empty;
+
+        //una categoría tiene muchas subastas
+        public ICollection<Subasta> Subastas { get; set; } = new List<Subasta>();
+    }
+}
