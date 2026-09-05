@@ -41,6 +41,12 @@ namespace Infrastructure.Datos
                 .WithMany(u => u.PujasRealizadas)
                 .HasForeignKey(p => p.CompradorId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Indicamos que la entidad Subasta usará el campo RowVersion 
+            // como token de concurrencia optimista
+            modelBuilder.Entity<Subasta>()
+                .Property(subasta => subasta.Version)
+                .IsConcurrencyToken();
         }
     }
 }

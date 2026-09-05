@@ -27,4 +27,23 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var servicios = scope.ServiceProvider;
+    try
+    {
+        var context = servicios.GetRequiredService<AppDbContext>();
+        DbInitializer.Seed(context);
+        Console.WriteLine("--> Data Seeding ejecutado con éxito.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"--> Error en Data Seeding: {ex.Message}");
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine($"--> Detalle interno: {ex.InnerException.Message}");
+        }
+    }
+}
+
 app.Run();
