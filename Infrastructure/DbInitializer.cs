@@ -61,20 +61,20 @@ namespace Infrastructure.Datos
                 context.Usuarios.AddRange(vendedor, comprador1, comprador2, sinFondos);
                 context.SaveChanges();
 
-                // Billeteras asociadas a cada usuario
+                // Billeteras asociadas a los Usuarios
                 var billeteras = new List<Billetera>
                 {
-                    // vendedor: Saldo $0
-                    new Billetera { UsuarioId = vendedor.Id, SaldoTotal = 0, SaldoRetenido = 0 },
+                    // Vendedor: Saldo $0
+                    new Billetera { Usuario = vendedor, SaldoDisponible = 0, SaldoRetenido = 0 },
 
-                    // comprador1: Total: $150.000 / Retenido: $45.000 / Disp: $105.000
-                    new Billetera { UsuarioId = comprador1.Id, SaldoTotal = 150000, SaldoRetenido = 45000 },
+                    // Comprador 1: Total $150.000 / Retenido $45.000 / Disponible $105.000
+                    new Billetera { Usuario = comprador1, SaldoDisponible = 105000, SaldoRetenido = 45000 },
 
-                    // comprador2: Total: $200.000 / Retenido: $0 / Disp: $200.000
-                    new Billetera { UsuarioId = comprador2.Id, SaldoTotal = 200000, SaldoRetenido = 0 },
+                    // Comprador 2: Total $200.000 / Retenido $0 / Disponible $200.000
+                    new Billetera { Usuario = comprador2, SaldoDisponible = 200000, SaldoRetenido = 0 },
 
-                    // sinfondos: Total: $500 / Retenido: $0
-                    new Billetera { UsuarioId = sinFondos.Id, SaldoTotal = 500, SaldoRetenido = 0 }
+                    // SinFondos: Total $500 / Retenido $0 / Disponible $500
+                    new Billetera { Usuario = sinFondos, SaldoDisponible = 500, SaldoRetenido = 0 }
                 };
 
                 context.Billeteras.AddRange(billeteras);

@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Infrastructure.Datos; 
+using Application.IRepository.ICommand;
+using Application.IRepository.IQuery;
+using Infrastructure.Repository.Command;
+using Infrastructure.Repository.Query;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +16,15 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IBilleteraCommand, BilleteraCommand>();
+builder.Services.AddScoped<IBilleteraQuery, BilleteraQuery>();
+
+builder.Services.AddScoped<IPujaCommand, PujaCommand>();
+builder.Services.AddScoped<IPujaQuery, PujaQuery>();
+
+builder.Services.AddScoped<ISubastaCommand, SubastaCommand>();
+builder.Services.AddScoped<ISubastaQuery, SubastaQuery>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

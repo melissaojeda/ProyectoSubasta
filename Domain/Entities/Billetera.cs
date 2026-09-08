@@ -5,7 +5,6 @@ namespace Domain.Entities
         public int Id { get; set; }
         public int UsuarioId { get; set; }
         public Usuario Usuario { get; set; } = null!;
-
         public decimal SaldoTotal { get; set; }
         public decimal SaldoRetenido { get; set; }
         public decimal SaldoDisponible { get; set; }
