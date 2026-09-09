@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IBilleteraCommand, BilleteraCommand>();
 builder.Services.AddScoped<IBilleteraQuery, BilleteraQuery>();
+builder.Services.AddHostedService<Infrastructure.SubastaWorker>();
 
 builder.Services.AddScoped<IPujaCommand, PujaCommand>();
 builder.Services.AddScoped<IPujaQuery, PujaQuery>();
@@ -37,6 +38,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.UseMiddleware<proyectoapi.Middlewares.ManejoExcepcionesMiddleware>();
 
 app.MapControllers();
 

@@ -170,7 +170,7 @@ namespace Infrastructure.Datos
                     IncrementoMinimo = 5000,
                     FechaInicio = fechaActual.AddDays(-2),
                     FechaFin = fechaActual.AddDays(-1),
-                    Estado = "FINALIZADA",
+                    Estado = "DESIERTA",
                     Version = 1
                 };
 

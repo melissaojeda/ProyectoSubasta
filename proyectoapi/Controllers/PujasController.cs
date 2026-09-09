@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace proyectoapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class PujasController : ControllerBase
     {
         private readonly IPujaCommand _pujaCommand;
@@ -18,7 +18,7 @@ namespace proyectoapi.Controllers
             _pujaQuery = pujaQuery;
         }
 
-        // POST: api/pujas
+        // POST: api/v1/pujas
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreatePujaDTO dto)
         {
@@ -27,18 +27,12 @@ namespace proyectoapi.Controllers
                 return BadRequest(ModelState);
             }
 
-            try
-            {
-                await _pujaCommand.CreateAsync(dto);
-                return Ok(new { mensaje = "Puja realizada con éxito." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { mensaje = ex.Message });
-            }
+            // El Middleware se encarga de atrapar excepciones y devolver 400, 409, 422 o 500
+            await _pujaCommand.CreateAsync(dto);
+            return Ok(new { mensaje = "Puja realizada con éxito." });
         }
 
-        // GET: api/pujas/5
+        // GET: api/v1/pujas/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -50,16 +44,16 @@ namespace proyectoapi.Controllers
             return Ok(puja);
         }
 
-        // GET: api/pujas/subasta/5
-        [HttpGet("subasta/{subastaId}")]
+        // GET: api/v1/pujas/subastas/5
+        [HttpGet("subastas/{subastaId}")]
         public async Task<IActionResult> GetBySubastaId(int subastaId)
         {
             var pujas = await _pujaQuery.GetBySubastaIdAsync(subastaId);
             return Ok(pujas);
         }
 
-        // GET: api/pujas/usuario/5
-        [HttpGet("usuario/{usuarioId}")]
+        // GET: api/v1/pujas/usuarios/5
+        [HttpGet("usuarios/{usuarioId}")]
         public async Task<IActionResult> GetByUsuarioId(int usuarioId)
         {
             var pujas = await _pujaQuery.GetByUsuarioIdAsync(usuarioId);
