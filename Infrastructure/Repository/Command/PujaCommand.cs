@@ -98,23 +98,25 @@ namespace Infrastructure.Repository.Command
                         ? billeteraNuevoPostor
                         : await _context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == pujaMaximaActual.CompradorId);
 
-                    if (billeteraAnteriorPostor != null)
+                    if (billeteraAnteriorPostor == null)
                     {
-                        billeteraAnteriorPostor.SaldoRetenido -= pujaMaximaActual.Monto;
-                        billeteraAnteriorPostor.SaldoDisponible += pujaMaximaActual.Monto;
-                        billeteraAnteriorPostor.Version++; // Incrementar la versión para control de concurrencia
-                        _context.Billeteras.Update(billeteraAnteriorPostor);
-
-                        // Registrar liberación del saldo retenido
-                        _context.TransaccionesLedger.Add(new TransaccionLedger
-                        {
-                            BilleteraId = billeteraAnteriorPostor.Id,
-                            SubastaId = subasta.Id,
-                            Tipo = "LIBERACION_PUJA",
-                            Monto = pujaMaximaActual.Monto,
-                            Fecha = DateTime.UtcNow
-                        });
+                        throw new KeyNotFoundException("No se encontró la billetera del postor anterior.");
                     }
+
+                    billeteraAnteriorPostor.SaldoRetenido -= pujaMaximaActual.Monto;
+                    billeteraAnteriorPostor.SaldoDisponible += pujaMaximaActual.Monto;
+                    billeteraAnteriorPostor.Version++; // Incrementar la versión para control de concurrencia
+                    _context.Billeteras.Update(billeteraAnteriorPostor);
+
+                    // Registrar liberación del saldo retenido
+                    _context.TransaccionesLedger.Add(new TransaccionLedger
+                    {
+                        BilleteraId = billeteraAnteriorPostor.Id,
+                        SubastaId = subasta.Id,
+                        Tipo = "LIBERACION_PUJA",
+                        Monto = pujaMaximaActual.Monto,
+                        Fecha = DateTime.UtcNow
+                    });
                 }
 
                 // Retener fondos en la billetera del nuevo postor

@@ -17,7 +17,7 @@ namespace proyectoapi.Controllers
             _billeteraQuery = billeteraQuery;
         }
 
-        // GET: api/v1/billeteras/5
+        // GET: api/v1/billeteras/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -29,7 +29,7 @@ namespace proyectoapi.Controllers
             return Ok(billetera);
         }
 
-        // GET: api/v1/billeteras/usuarios/5
+        // GET: api/v1/billeteras/usuarios/{usuarioId}
         [HttpGet("usuarios/{usuarioId}")]
         public async Task<IActionResult> GetByUsuarioId(int usuarioId)
         {
@@ -41,8 +41,8 @@ namespace proyectoapi.Controllers
             return Ok(billetera);
         }
 
-        // POST: api/v1/billeteras/{id}/transacciones
-        [HttpPost("{id}/transacciones")]
+        // POST: api/v1/billeteras/{billeteraId}/transacciones
+        [HttpPost("{billeteraId}/transacciones")]
         public async Task<IActionResult> Depositar(int billeteraId, [FromBody] SolicitudDepositoDTO dto)
         {
             if (dto.Monto <= 0)

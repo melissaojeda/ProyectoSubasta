@@ -45,7 +45,7 @@ namespace proyectoapi.Controllers
         }
 
         // GET: api/v1/subastas/{subastaId}/pujas
-        [HttpGet("subastas/{subastaId}")]
+        [HttpGet]
         public async Task<IActionResult> GetBySubastaId(int subastaId)
         {
             var pujas = await _pujaQuery.GetBySubastaIdAsync(subastaId);

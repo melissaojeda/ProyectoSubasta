@@ -62,6 +62,7 @@ namespace Infrastructure
                     {
                         // CASO 1: Sin ofertas -> Estado DESIERTA
                         subasta.Estado = "DESIERTA";
+                        subasta.Version++;
 
                         context.Set<AuditoriaLog>().Add(new AuditoriaLog
                         {
@@ -79,6 +80,7 @@ namespace Infrastructure
                     {
                         // CASO 2: Con ganador -> Estado FINALIZADA y liquidación de fondos
                         subasta.Estado = "FINALIZADA";
+                        subasta.Version++;
 
                         var billeteraComprador = await context.Set<Billetera>()
                             .FirstOrDefaultAsync(b => b.UsuarioId == pujaGanadora.CompradorId);
@@ -101,9 +103,11 @@ namespace Infrastructure
 
                         billeteraComprador.SaldoRetenido -= pujaGanadora.Monto;
                         billeteraComprador.SaldoTotal -= pujaGanadora.Monto;
+                        billeteraComprador.Version ++;
 
                         billeteraVendedor.SaldoDisponible += pujaGanadora.Monto;
                         billeteraVendedor.SaldoTotal += pujaGanadora.Monto;
+                        billeteraVendedor.Version++;
 
                         // Registro de transacciones en el ledger
                         context.Set<TransaccionLedger>().Add(new TransaccionLedger

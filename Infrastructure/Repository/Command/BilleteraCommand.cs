@@ -48,6 +48,9 @@ namespace Infrastructure.Repository.Command
 
                 billetera.SaldoTotal += monto;
                 billetera.SaldoDisponible += monto;
+
+                // Incrementar la versión de la billetera
+                billetera.Version ++;
                 _context.Billeteras.Update(billetera);
 
                 // Registrar el depósito en el ledger

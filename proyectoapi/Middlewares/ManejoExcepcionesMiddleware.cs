@@ -47,8 +47,8 @@ namespace proyectoapi.Middlewares
                     mensaje = ex.Message;
                     break;
 
-                case InvalidOperationException ex when ex.Message.Contains("subasta", StringComparison.OrdinalIgnoreCase):
-                    code = HttpStatusCode.Conflict; // HTTP 409
+                case InvalidOperationException ex:
+                    code = HttpStatusCode.Conflict; // 409
                     mensaje = ex.Message;
                     break;
 
