@@ -19,88 +19,127 @@ namespace Infrastructure.Repository.Command
         {
             _context = context;
         }
-        public async Task CreateAsync(CreatePujaDTO dto)
+
+        public async Task CreateAsync(int subastaId, CreatePujaDTO dto)
         {
-            // Transacción ACID para asegurar consistencia
+            //Validaciones previas antes de iniciar transacciones de dinero
+            var subasta = await _context.Subastas
+                .FirstOrDefaultAsync(s => s.Id == subastaId);
+
+            if (subasta == null)
+                throw new ArgumentException("La subasta no existe.");
+
+            if (DateTime.UtcNow > subasta.FechaFin)
+                throw new InvalidOperationException("La subasta ya ha finalizado.");
+
+            //Validar que la subasta esté activa
+            if (subasta.Estado != "ACTIVA")
+            {
+                throw new InvalidOperationException(
+                    "La subasta no se encuentra activa.");
+            }
+
+            var pujaMaximaActual = await _context.Pujas
+                .Where(p => p.SubastaId == subastaId)
+                .OrderByDescending(p => p.Monto)
+                .FirstOrDefaultAsync();
+
+            // Validar que el monto de la puja sea mayor al mínimo requerido
+            decimal precioMinimoRequerido = pujaMaximaActual != null 
+                ? pujaMaximaActual.Monto + subasta.IncrementoMinimo
+                : subasta.PrecioBase;
+
+            if (dto.Monto < precioMinimoRequerido)
+                throw new ArgumentException($"El monto debe ser superior o igual al valor mínimo requerido (${precioMinimoRequerido}).");
+
+            var billeteraNuevoPostor = await _context.Billeteras
+                .FirstOrDefaultAsync(b => b.UsuarioId == dto.CompradorId);
+
+            if (billeteraNuevoPostor == null)
+                throw new ArgumentException("El comprador no posee una billetera activa.");
+
+
+            // Calcular el monto necesario a retener en la billetera del postor
+            decimal montoNecesario = dto.Monto;
+
+            if (pujaMaximaActual != null &&
+                pujaMaximaActual.CompradorId == dto.CompradorId)
+            {
+                montoNecesario = dto.Monto - pujaMaximaActual.Monto;
+            }
+
+            // Validar saldo disponible suficiente
+            if (billeteraNuevoPostor.SaldoDisponible < montoNecesario)
+            {
+                _context.AuditoriasLog.Add(new AuditoriaLog
+                {
+                    Entidad = "Puja",
+                    EntidadId = subastaId,
+                    Accion = "RECHAZADA_FONDOS_INSUFICIENTES",
+                    UsuarioId = dto.CompradorId,
+                    DetalleJson = $"{{\"MontoIntentado\": {dto.Monto}, \"SaldoDisponible\": {billeteraNuevoPostor.SaldoDisponible}}}",
+                    Fecha = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
+                throw new InvalidOperationException("Saldo insuficiente en la billetera para realizar la oferta.");
+            }
+
+            // Transacción de base de datos para movimientos de fondos y registro de puja
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // Obtener la subasta
-                var subasta = await _context.Subastas
-                    .FirstOrDefaultAsync(s => s.Id == dto.SubastaId);
-
-                if (subasta == null)
-                    throw new Exception("La subasta no existe.");
-
-                if (DateTime.UtcNow > subasta.FechaFin)
-                    throw new Exception("La subasta ya ha finalizado.");
-
-                // Obtener la puja máxima actual
-                var pujaMaximaActual = await _context.Pujas
-                    .Where(p => p.SubastaId == dto.SubastaId)
-                    .OrderByDescending(p => p.Monto)
-                    .FirstOrDefaultAsync();
-
-                decimal precioMinimoRequerido = pujaMaximaActual != null 
-                    ? pujaMaximaActual.Monto 
-                    : subasta.PrecioBase;
-
-                if (dto.Monto <= precioMinimoRequerido)
-                    throw new Exception($"El monto debe ser superior al valor actual (${precioMinimoRequerido}).");
-
-                // Obtener la billetera del nuevo postor
-                var billeteraNuevoPostor = await _context.Billeteras
-                    .FirstOrDefaultAsync(b => b.UsuarioId == dto.CompradorId);
-
-                if (billeteraNuevoPostor == null)
-                    throw new Exception("El comprador no posee una billetera activa.");
-
                 // Devolución de Escrow al postor anterior
                 if (pujaMaximaActual != null)
                 {
-                    // Si el postor anterior es el mismo usuario, usamos la misma instancia en memoria
                     var billeteraAnteriorPostor = (pujaMaximaActual.CompradorId == dto.CompradorId)
                         ? billeteraNuevoPostor
                         : await _context.Billeteras.FirstOrDefaultAsync(b => b.UsuarioId == pujaMaximaActual.CompradorId);
 
-                    if (billeteraAnteriorPostor != null)
+                    if (billeteraAnteriorPostor == null)
                     {
-                        billeteraAnteriorPostor.SaldoRetenido -= pujaMaximaActual.Monto;
-                        billeteraAnteriorPostor.SaldoDisponible += pujaMaximaActual.Monto;
-                        _context.Billeteras.Update(billeteraAnteriorPostor);
+                        throw new KeyNotFoundException("No se encontró la billetera del postor anterior.");
                     }
-                }
 
-                // Validar que el nuevo postor tenga saldo disponible suficiente (luego de liberar retenidos previos)
-                if (billeteraNuevoPostor.SaldoDisponible < dto.Monto)
-                {
-                    _context.AuditoriasLog.Add(new AuditoriaLog
+                    billeteraAnteriorPostor.SaldoRetenido -= pujaMaximaActual.Monto;
+                    billeteraAnteriorPostor.SaldoDisponible += pujaMaximaActual.Monto;
+                    billeteraAnteriorPostor.Version++; // Incrementar la versión para control de concurrencia
+                    _context.Billeteras.Update(billeteraAnteriorPostor);
+
+                    // Registrar liberación del saldo retenido
+                    _context.TransaccionesLedger.Add(new TransaccionLedger
                     {
-                        Entidad = "Puja",
-                        EntidadId = dto.SubastaId,
-                        Accion = "RECHAZADA_FONDOS_INSUFICIENTES",
-                        UsuarioId = dto.CompradorId,
-                        DetalleJson = $"{{\"MontoIntentado\": {dto.Monto}, \"SaldoDisponible\": {billeteraNuevoPostor.SaldoDisponible}}}",
+                        BilleteraId = billeteraAnteriorPostor.Id,
+                        SubastaId = subasta.Id,
+                        Tipo = "LIBERACION_PUJA",
+                        Monto = pujaMaximaActual.Monto,
                         Fecha = DateTime.UtcNow
                     });
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    throw new Exception("Saldo insuficiente en la billetera para realizar esta puja.");
                 }
 
-                //Retener fondos en la billetera del nuevo postor
+                // Retener fondos en la billetera del nuevo postor
                 billeteraNuevoPostor.SaldoDisponible -= dto.Monto;
                 billeteraNuevoPostor.SaldoRetenido += dto.Monto;
+                billeteraNuevoPostor.Version++; // Incrementar la versión para control de concurrencia
                 _context.Billeteras.Update(billeteraNuevoPostor);
 
-                // Aplicar Anti-Sniping
+                // Registrar retención de la nueva puja
+                _context.TransaccionesLedger.Add(new TransaccionLedger
+                {
+                    BilleteraId = billeteraNuevoPostor.Id,
+                    SubastaId = subasta.Id,
+                    Tipo = "RETENCION_PUJA",
+                    Monto = dto.Monto,
+                    Fecha = DateTime.UtcNow
+                });
+
+                // Aplicar Anti Sniping
                 var tiempoRestante = subasta.FechaFin - DateTime.UtcNow;
                 if (tiempoRestante.TotalSeconds <= 60 && tiempoRestante.TotalSeconds > 0)
                 {
                     subasta.FechaFin = subasta.FechaFin.AddMinutes(2);
-                    _context.Subastas.Update(subasta);
 
                     _context.AuditoriasLog.Add(new AuditoriaLog
                     {
@@ -113,10 +152,14 @@ namespace Infrastructure.Repository.Command
                     });
                 }
 
+                // Actualizar la versión de subasta con la nueva puja
+                subasta.Version++;
+                _context.Subastas.Update(subasta);
+
                 // Registrar la nueva Puja
                 var nuevaPuja = new Puja
                 {
-                    SubastaId = dto.SubastaId,
+                    SubastaId = subasta.Id,
                     CompradorId = dto.CompradorId,
                     Monto = dto.Monto,
                     FechaPuja = DateTime.UtcNow
@@ -124,13 +167,34 @@ namespace Infrastructure.Repository.Command
 
                 await _context.Pujas.AddAsync(nuevaPuja);
 
-                // Confirmar la transacción
+                // Confirmar la puja completa
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (DbUpdateConcurrencyException ex)
             {
                 await transaction.RollbackAsync();
+                _context.ChangeTracker.Clear();
+
+                _context.AuditoriasLog.Add(new AuditoriaLog
+                {
+                    Entidad = "Puja",
+                    EntidadId = subastaId,
+                    Accion = "RECHAZADA_CONCURRENCIA",
+                    UsuarioId = dto.CompradorId,
+                    DetalleJson = $"{{\"mensaje\": \"Conflicto de concurrencia detectado al procesar la puja por ${dto.Monto}\"}}",
+                    Fecha = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+                throw new DbUpdateConcurrencyException("La puja no se pudo completar debido a una actualización concurrente. Por favor, intente de nuevo.", ex);
+            }
+            catch
+            {
+                if (transaction.TransactionId != Guid.Empty)
+                {
+                    try { await transaction.RollbackAsync(); } catch { }
+                }
                 throw;
             }
         }

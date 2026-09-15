@@ -31,7 +31,7 @@ namespace Infrastructure.Repository.Command
             _context.Billeteras.Update(billetera);
             await _context.SaveChangesAsync();
         }
-        public async Task DepositarAsync(int usuarioId, decimal monto)
+        public async Task DepositarAsync(int billeteraId, decimal monto)
         {
             if (monto <= 0)
                 throw new ArgumentException("El monto a depositar debe ser mayor a cero.");
@@ -41,20 +41,33 @@ namespace Infrastructure.Repository.Command
             try
             {
                 var billetera = await _context.Billeteras
-                    .FirstOrDefaultAsync(b => b.UsuarioId == usuarioId);
+                    .FirstOrDefaultAsync(b => b.Id == billeteraId);
 
                 if (billetera == null)
-                    throw new Exception("No se encontró una billetera para el usuario especificado.");
+                    throw new KeyNotFoundException("No se encontró la billetera especificada.");
 
+                billetera.SaldoTotal += monto;
                 billetera.SaldoDisponible += monto;
+
+                // Incrementar la versión de la billetera
+                billetera.Version ++;
                 _context.Billeteras.Update(billetera);
+
+                // Registrar el depósito en el ledger
+                _context.TransaccionesLedger.Add(new TransaccionLedger
+                {
+                    BilleteraId = billetera.Id,
+                    Tipo = "DEPOSITO",
+                    Monto = monto,
+                    Fecha = DateTime.UtcNow
+                });
 
                 _context.AuditoriasLog.Add(new AuditoriaLog
                 {
                     Entidad = "Billetera",
                     EntidadId = billetera.Id,
                     Accion = "DEPOSITO_FONDOS",
-                    UsuarioId = usuarioId,
+                    UsuarioId = billetera.UsuarioId,
                     DetalleJson = $"{{\"MontoDepositado\": {monto}, \"NuevoSaldoDisponible\": {billetera.SaldoDisponible}}}",
                     Fecha = DateTime.UtcNow
                 });

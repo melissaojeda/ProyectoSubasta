@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace proyectoapi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     public class BilleterasController : ControllerBase
     {
         private readonly IBilleteraCommand _billeteraCommand;
@@ -17,7 +17,7 @@ namespace proyectoapi.Controllers
             _billeteraQuery = billeteraQuery;
         }
 
-        // GET: api/billeteras/5
+        // GET: api/v1/billeteras/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -29,8 +29,8 @@ namespace proyectoapi.Controllers
             return Ok(billetera);
         }
 
-        // GET: api/billeteras/usuario/5 (Desglose de saldos)
-        [HttpGet("usuario/{usuarioId}")]
+        // GET: api/v1/billeteras/usuarios/{usuarioId}
+        [HttpGet("usuarios/{usuarioId}")]
         public async Task<IActionResult> GetByUsuarioId(int usuarioId)
         {
             var billetera = await _billeteraQuery.GetByUsuarioIdAsync(usuarioId);
@@ -41,24 +41,23 @@ namespace proyectoapi.Controllers
             return Ok(billetera);
         }
 
-        // POST: api/billeteras/depositar (Carga de fondos simulados)
-        [HttpPost("depositar")]
-        public async Task<IActionResult> Depositar(int usuarioId, decimal monto)
+        // POST: api/v1/billeteras/{billeteraId}/transacciones
+        [HttpPost("{billeteraId}/transacciones")]
+        public async Task<IActionResult> Depositar(int billeteraId, [FromBody] SolicitudDepositoDTO dto)
         {
-            if (monto <= 0)
+            if (dto.Monto <= 0)
             {
                 return BadRequest(new { mensaje = "El monto a depositar debe ser mayor a cero." });
             }
 
-            try
-            {
-                await _billeteraCommand.DepositarAsync(usuarioId, monto);
-                return Ok(new { mensaje = $"Se acreditaron ${monto} correctamente al usuario {usuarioId}." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { mensaje = ex.Message });
-            }
+            await _billeteraCommand.DepositarAsync(billeteraId, dto.Monto);
+            return Ok(new { mensaje = $"Se acreditaron ${dto.Monto} correctamente a la billetera {billeteraId}." });
+        }
+
+        // DTO simple para recibir el JSON en el Body
+        public class SolicitudDepositoDTO
+        {
+            public decimal Monto { get; set; }
         }
     }
 }

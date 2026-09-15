@@ -13,7 +13,7 @@ namespace Application.IRepository.ICommand
     {
         Task CreateAsync(Billetera billetera);
         Task UpdateAsync(Billetera billetera);
-        Task DepositarAsync(int usuarioId, decimal monto);
+        Task DepositarAsync(int billeteraId, decimal monto);
         Task SaveChangesAsync();
     }
 }

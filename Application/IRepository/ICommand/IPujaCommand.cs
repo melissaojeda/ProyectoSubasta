@@ -9,7 +9,7 @@ namespace Application.IRepository.ICommand
 {
     public interface IPujaCommand
     {
-        Task CreateAsync(CreatePujaDTO dto);
+        Task CreateAsync(int subastaId, CreatePujaDTO dto);
         Task SaveChangesAsync();
     }
 }
