@@ -1,7 +1,6 @@
 using Application.DTOs.Subasta;
-using Application.IRepository.ICommand;
-using Application.IRepository.IQuery;
 using Microsoft.AspNetCore.Mvc;
+using Application.UseCases.Subastas;
 
 namespace proyectoapi.Controllers
 {
@@ -9,20 +8,21 @@ namespace proyectoapi.Controllers
     [Route("api/v1/[controller]")]
     public class SubastasController : ControllerBase
     {
-        private readonly ISubastaCommand _subastaCommand;
-        private readonly ISubastaQuery _subastaQuery;
-
-        public SubastasController(ISubastaCommand subastaCommand, ISubastaQuery subastaQuery)
+        private readonly ICrearSubastaUseCase _crearSubastaUseCase;
+        private readonly IObtenerSubastasUseCase _obtenerSubastasUseCase;
+        private readonly IObtenerSubastaPorIdUseCase _obtenerSubastaPorIdUseCase;
+        public SubastasController(ICrearSubastaUseCase crearSubastaUseCase, IObtenerSubastasUseCase obtenerSubastasUseCase, IObtenerSubastaPorIdUseCase obtenerSubastaPorIdUseCase)
         {
-            _subastaCommand = subastaCommand;
-            _subastaQuery = subastaQuery;
+            _crearSubastaUseCase = crearSubastaUseCase;
+            _obtenerSubastasUseCase = obtenerSubastasUseCase;
+            _obtenerSubastaPorIdUseCase = obtenerSubastaPorIdUseCase;
         }
 
         // GET: api/v1/subastas
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var subastas = await _subastaQuery.GetAllAsync();
+            var subastas = await _obtenerSubastasUseCase.EjecutarAsync();
             return Ok(subastas);
         }
 
@@ -30,7 +30,7 @@ namespace proyectoapi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var subasta = await _subastaQuery.GetByIdAsync(id);
+            var subasta = await _obtenerSubastaPorIdUseCase.EjecutarAsync(id);
             if (subasta == null)
             {
                 return NotFound(new { mensaje = "Subasta no encontrada." });
@@ -46,7 +46,7 @@ namespace proyectoapi.Controllers
             {
                 return BadRequest(ModelState);
             }
-            await _subastaCommand.CreateAsync(dto);
+            await _crearSubastaUseCase.EjecutarAsync(dto);
             return StatusCode(201, new { mensaje = "Subasta creada exitosamente." });
         }
     }

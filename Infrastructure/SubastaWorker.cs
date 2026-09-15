@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
+using Infrastructure.Hubs;
 
 namespace Infrastructure
 {
@@ -11,11 +13,12 @@ namespace Infrastructure
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<SubastaWorker> _logger;
-
-        public SubastaWorker(IServiceProvider serviceProvider, ILogger<SubastaWorker> logger)
+        private readonly IHubContext<SubastaHub> _hubContext;
+        public SubastaWorker(IServiceProvider serviceProvider, ILogger<SubastaWorker> logger, IHubContext<SubastaHub> hubContext)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _hubContext = hubContext;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -41,9 +44,24 @@ namespace Infrastructure
         {
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
             var ahora = DateTime.UtcNow;
 
+            //PASO DE PROGRAMADA -> ACTIVA
+            var subastasParaActivar = await context.Set<Subasta>()
+                .Where(s => s.Estado == "PROGRAMADA" && s.FechaInicio <= ahora)
+                .ToListAsync();
+
+            if (subastasParaActivar.Any())
+            {
+                foreach (var subasta in subastasParaActivar)
+                {
+                    subasta.Estado = "ACTIVA";
+                    subasta.Version++;
+                    _logger.LogInformation($"Subasta #{subasta.Id} ha sido ACTIVADA automáticamente.");
+                }
+                await context.SaveChangesAsync();
+            }
+            //PASO DE ACTIVA -> DESIERTA / FINALIZADA
             var subastasVencidas = await context.Set<Subasta>()
                 .Include(s => s.Pujas)
                 .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= ahora)
@@ -63,8 +81,8 @@ namespace Infrastructure
                         // CASO 1: Sin ofertas -> Estado DESIERTA
                         subasta.Estado = "DESIERTA";
                         subasta.Version++;
-
-                        context.Set<AuditoriaLog>().Add(new AuditoriaLog
+                        
+                        context.AuditoriasLog.Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
@@ -75,6 +93,17 @@ namespace Infrastructure
                         });
 
                         _logger.LogInformation($"Subasta #{subasta.Id} finalizada sin ofertas (DESIERTA).");
+
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        // NOTIFICACIÓN EN TIEMPO REAL VÍA SIGNALR
+                        await _hubContext.Clients.Group(subasta.Id.ToString())
+                            .SendAsync("SubastaFinalizada", new 
+                            { 
+                                SubastaId = subasta.Id, 
+                                Estado = "DESIERTA" 
+                            });
                     }
                     else
                     {
@@ -127,8 +156,8 @@ namespace Infrastructure
                             Fecha = DateTime.UtcNow,
                             SubastaId = subasta.Id
                         });
-                        
-                        context.Set<AuditoriaLog>().Add(new AuditoriaLog
+
+                        context.AuditoriasLog.Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
@@ -139,10 +168,19 @@ namespace Infrastructure
                         });
 
                         _logger.LogInformation($"Subasta #{subasta.Id} FINALIZADA. Ganador: Usuario #{pujaGanadora.CompradorId}.");
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        // NOTIFICACIÓN EN TIEMPO REAL VÍA SIGNALR
+                        await _hubContext.Clients.Group(subasta.Id.ToString())
+                            .SendAsync("SubastaFinalizada", new 
+                            { 
+                                SubastaId = subasta.Id, 
+                                Estado = "FINALIZADA",
+                                GanadorId = pujaGanadora.CompradorId,
+                                MontoFinal = pujaGanadora.Monto
+                            });
                     }
 
-                    await context.SaveChangesAsync();
-                    await transaction.CommitAsync();
                 }
                 catch (Exception ex)
                 {

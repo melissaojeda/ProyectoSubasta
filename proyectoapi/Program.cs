@@ -4,6 +4,13 @@ using Application.IRepository.ICommand;
 using Application.IRepository.IQuery;
 using Infrastructure.Repository.Command;
 using Infrastructure.Repository.Query;
+using Microsoft.AspNetCore.SignalR;
+using Infrastructure.Hubs;
+using Application.UseCases.Pujas;
+using Infrastructure;
+using Application.UseCases.Billeteras;
+using Application.UseCases.Subastas;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,13 +26,45 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IBilleteraCommand, BilleteraCommand>();
 builder.Services.AddScoped<IBilleteraQuery, BilleteraQuery>();
-builder.Services.AddHostedService<Infrastructure.SubastaWorker>();
 
 builder.Services.AddScoped<IPujaCommand, PujaCommand>();
 builder.Services.AddScoped<IPujaQuery, PujaQuery>();
 
 builder.Services.AddScoped<ISubastaCommand, SubastaCommand>();
 builder.Services.AddScoped<ISubastaQuery, SubastaQuery>();
+
+builder.Services.AddScoped<ICategoriaCommand, CategoriaCommand>();
+builder.Services.AddScoped<ICategoriaQuery, CategoriaQuery>();
+
+builder.Services.AddScoped<IUsuarioCommand, UsuarioCommand>();
+builder.Services.AddScoped<IUsuarioQuery, UsuarioQuery>();
+
+builder.Services.AddScoped<IAuditoriaLogCommand, AuditoriaLogCommand>();
+builder.Services.AddScoped<IAuditoriaLogQuery, AuditoriaLogQuery>();
+
+builder.Services.AddScoped<ITransaccionLedgerCommand, TransaccionLedgerCommand>();
+builder.Services.AddScoped<ITransaccionLedgerQuery, TransaccionLedgerQuery>();
+//casos de uso
+builder.Services.AddScoped<ICrearPujaUseCase, CrearPujaUseCase>();
+builder.Services.AddScoped<ICrearSubastaUseCase, CrearSubastaUseCase>();
+builder.Services.AddScoped<IObtenerSubastasUseCase, ObtenerSubastasUseCase>();
+builder.Services.AddScoped<IObtenerSubastaPorIdUseCase, ObtenerSubastaPorIdUseCase>();
+builder.Services.AddScoped<IDepositarBilleteraUseCase, DepositarBilleteraUseCase>();
+
+builder.Services.AddSignalR();
+builder.Services.AddHostedService<SubastaWorker>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:5173") // Ajustar el puerto del frontend
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); 
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -37,11 +76,23 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowFrontend");
+
 app.UseMiddleware<proyectoapi.Middlewares.ManejoExcepcionesMiddleware>();
 
 app.UseAuthorization();
 
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Api-version", "1.0");
+    await next();
+});
+
+
 app.MapControllers();
+
+app.MapHub<Infrastructure.Hubs.SubastaHub>("/hubs/subasta");
 
 using (var scope = app.Services.CreateScope())
 {
