@@ -56,9 +56,9 @@ namespace Infrastructure
                 using var transaction = await context.Database.BeginTransactionAsync();
                 try
                 {
-                    var ultimaPuja = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
+                    var pujaGanadora = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
 
-                    if (ultimaPuja == null)
+                    if (pujaGanadora == null)
                     {
                         // CASO 1: Sin ofertas -> Estado DESIERTA
                         subasta.Estado = "DESIERTA";
@@ -81,40 +81,60 @@ namespace Infrastructure
                         subasta.Estado = "FINALIZADA";
 
                         var billeteraComprador = await context.Set<Billetera>()
-                            .FirstOrDefaultAsync(b => b.UsuarioId == ultimaPuja.CompradorId);
+                            .FirstOrDefaultAsync(b => b.UsuarioId == pujaGanadora.CompradorId);
 
                         var billeteraVendedor = await context.Set<Billetera>()
                             .FirstOrDefaultAsync(b => b.UsuarioId == subasta.VendedorId);
 
-                        if (billeteraComprador != null && billeteraVendedor != null)
+                        // Validación de existencia de billeteras
+                        if (billeteraComprador == null)
                         {
-                            billeteraComprador.SaldoRetenido -= ultimaPuja.Monto;
-                            billeteraComprador.SaldoTotal -= ultimaPuja.Monto;
-
-                            billeteraVendedor.SaldoDisponible += ultimaPuja.Monto;
-                            billeteraVendedor.SaldoTotal += ultimaPuja.Monto;
-
-                            context.Set<TransaccionLedger>().Add(new TransaccionLedger
-                            {
-                                BilleteraId = billeteraVendedor.Id,
-                                Tipo = "INGRESO_VENTA",
-                                Monto = ultimaPuja.Monto,
-                                Fecha = DateTime.UtcNow,
-                                SubastaId = subasta.Id
-                            });
+                            throw new InvalidOperationException(
+                                "No se encontró la billetera del comprador ganador.");
                         }
 
+                        if (billeteraVendedor == null)
+                        {
+                            throw new InvalidOperationException(
+                                "No se encontró la billetera del vendedor.");
+                        }
+
+                        billeteraComprador.SaldoRetenido -= pujaGanadora.Monto;
+                        billeteraComprador.SaldoTotal -= pujaGanadora.Monto;
+
+                        billeteraVendedor.SaldoDisponible += pujaGanadora.Monto;
+                        billeteraVendedor.SaldoTotal += pujaGanadora.Monto;
+
+                        // Registro de transacciones en el ledger
+                        context.Set<TransaccionLedger>().Add(new TransaccionLedger
+                        {
+                            BilleteraId = billeteraComprador.Id,
+                            Tipo = "PAGO_SUBASTA",
+                            Monto = pujaGanadora.Monto,
+                            Fecha = DateTime.UtcNow,
+                            SubastaId = subasta.Id
+                        });
+
+                        context.Set<TransaccionLedger>().Add(new TransaccionLedger
+                        {
+                            BilleteraId = billeteraVendedor.Id,
+                            Tipo = "INGRESO_VENTA",
+                            Monto = pujaGanadora.Monto,
+                            Fecha = DateTime.UtcNow,
+                            SubastaId = subasta.Id
+                        });
+                        
                         context.Set<AuditoriaLog>().Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
                             Accion = "CAMBIO_ESTADO",
-                            UsuarioId = ultimaPuja.CompradorId,
-                            DetalleJson = $"{{\"mensaje\": \"Subasta #{subasta.Id} FINALIZADA por Worker.\", \"ganadorId\": {ultimaPuja.CompradorId}, \"monto\": {ultimaPuja.Monto}}}",
+                            UsuarioId = pujaGanadora.CompradorId,
+                            DetalleJson = $"{{\"mensaje\": \"Subasta #{subasta.Id} FINALIZADA por Worker.\", \"ganadorId\": {pujaGanadora.CompradorId}, \"monto\": {pujaGanadora.Monto}}}",
                             Fecha = DateTime.UtcNow
                         });
 
-                        _logger.LogInformation($"Subasta #{subasta.Id} FINALIZADA. Ganador: Usuario #{ultimaPuja.CompradorId}.");
+                        _logger.LogInformation($"Subasta #{subasta.Id} FINALIZADA. Ganador: Usuario #{pujaGanadora.CompradorId}.");
                     }
 
                     await context.SaveChangesAsync();

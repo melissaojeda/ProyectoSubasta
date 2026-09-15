@@ -47,12 +47,17 @@ namespace proyectoapi.Middlewares
                     mensaje = ex.Message;
                     break;
 
-                case ArgumentException ex:
-                    code = HttpStatusCode.BadRequest; // HTTP 400
+                case InvalidOperationException ex when ex.Message.Contains("subasta", StringComparison.OrdinalIgnoreCase):
+                    code = HttpStatusCode.Conflict; // HTTP 409
                     mensaje = ex.Message;
                     break;
 
-                case Exception ex when !string.IsNullOrEmpty(ex.Message):
+                case KeyNotFoundException ex:
+                    code = HttpStatusCode.NotFound; // HTTP 404
+                    mensaje = ex.Message;
+                    break;
+
+                case ArgumentException ex:
                     code = HttpStatusCode.BadRequest; // HTTP 400
                     mensaje = ex.Message;
                     break;

@@ -47,7 +47,7 @@ namespace proyectoapi.Controllers
                 return BadRequest(ModelState);
             }
             await _subastaCommand.CreateAsync(dto);
-            return Ok(new { mensaje = "Subasta creada exitosamente." });
+            return StatusCode(201, new { mensaje = "Subasta creada exitosamente." });
         }
     }
 }

@@ -65,16 +65,16 @@ namespace Infrastructure.Datos
                 var billeteras = new List<Billetera>
                 {
                     // Vendedor: Saldo $0
-                    new Billetera { Usuario = vendedor, SaldoDisponible = 0, SaldoRetenido = 0 },
+                    new Billetera { Usuario = vendedor, SaldoTotal=0, SaldoDisponible = 0, SaldoRetenido = 0 },
 
                     // Comprador 1: Total $150.000 / Retenido $45.000 / Disponible $105.000
-                    new Billetera { Usuario = comprador1, SaldoDisponible = 105000, SaldoRetenido = 45000 },
+                    new Billetera { Usuario = comprador1, SaldoTotal = 150000, SaldoDisponible = 105000, SaldoRetenido = 45000 },
 
                     // Comprador 2: Total $200.000 / Retenido $0 / Disponible $200.000
-                    new Billetera { Usuario = comprador2, SaldoDisponible = 200000, SaldoRetenido = 0 },
+                    new Billetera { Usuario = comprador2, SaldoTotal = 200000, SaldoDisponible = 200000, SaldoRetenido = 0 },
 
                     // SinFondos: Total $500 / Retenido $0 / Disponible $500
-                    new Billetera { Usuario = sinFondos, SaldoDisponible = 500, SaldoRetenido = 0 }
+                    new Billetera { Usuario = sinFondos, SaldoTotal = 500, SaldoDisponible = 500, SaldoRetenido = 0 }
                 };
 
                 context.Billeteras.AddRange(billeteras);

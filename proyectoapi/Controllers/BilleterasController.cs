@@ -43,15 +43,15 @@ namespace proyectoapi.Controllers
 
         // POST: api/v1/billeteras/{id}/transacciones
         [HttpPost("{id}/transacciones")]
-        public async Task<IActionResult> Depositar(int id, [FromBody] SolicitudDepositoDTO dto)
+        public async Task<IActionResult> Depositar(int billeteraId, [FromBody] SolicitudDepositoDTO dto)
         {
             if (dto.Monto <= 0)
             {
                 return BadRequest(new { mensaje = "El monto a depositar debe ser mayor a cero." });
             }
 
-            await _billeteraCommand.DepositarAsync(id, dto.Monto);
-            return Ok(new { mensaje = $"Se acreditaron ${dto.Monto} correctamente a la billetera {id}." });
+            await _billeteraCommand.DepositarAsync(billeteraId, dto.Monto);
+            return Ok(new { mensaje = $"Se acreditaron ${dto.Monto} correctamente a la billetera {billeteraId}." });
         }
 
         // DTO simple para recibir el JSON en el Body

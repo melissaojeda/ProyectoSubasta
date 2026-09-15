@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace proyectoapi.Controllers
 {
     [ApiController]
-    [Route("api/v1/[controller]")]
+    [Route("api/v1/subastas/{subastaId}/[controller]")]
     public class PujasController : ControllerBase
     {
         private readonly IPujaCommand _pujaCommand;
@@ -18,9 +18,9 @@ namespace proyectoapi.Controllers
             _pujaQuery = pujaQuery;
         }
 
-        // POST: api/v1/pujas
+        // POST: api/v1/subastas/{subastaId}/pujas
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreatePujaDTO dto)
+        public async Task<IActionResult> Create(int subastaId, [FromBody] CreatePujaDTO dto)
         {
             if (!ModelState.IsValid)
             {
@@ -28,11 +28,11 @@ namespace proyectoapi.Controllers
             }
 
             // El Middleware se encarga de atrapar excepciones y devolver 400, 409, 422 o 500
-            await _pujaCommand.CreateAsync(dto);
-            return Ok(new { mensaje = "Puja realizada con éxito." });
+            await _pujaCommand.CreateAsync(subastaId, dto);
+            return StatusCode(201, new { mensaje = "Puja realizada con éxito." });
         }
 
-        // GET: api/v1/pujas/5
+        // GET: api/v1/subastas/{subastaId}/pujas/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -44,7 +44,7 @@ namespace proyectoapi.Controllers
             return Ok(puja);
         }
 
-        // GET: api/v1/pujas/subastas/5
+        // GET: api/v1/subastas/{subastaId}/pujas
         [HttpGet("subastas/{subastaId}")]
         public async Task<IActionResult> GetBySubastaId(int subastaId)
         {
@@ -52,7 +52,7 @@ namespace proyectoapi.Controllers
             return Ok(pujas);
         }
 
-        // GET: api/v1/pujas/usuarios/5
+        // GET: api/v1/subastas/{subastaId}/pujas/usuarios/{usuarioId}
         [HttpGet("usuarios/{usuarioId}")]
         public async Task<IActionResult> GetByUsuarioId(int usuarioId)
         {
