@@ -9,6 +9,7 @@ using Domain.Entities;
 using Infrastructure.Datos;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace Infrastructure.Repository.Command
 {
     public class PujaCommand : IPujaCommand

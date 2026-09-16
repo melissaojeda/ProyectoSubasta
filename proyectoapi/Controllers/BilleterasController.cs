@@ -1,6 +1,7 @@
 using Application.IRepository.ICommand;
 using Application.IRepository.IQuery;
 using Microsoft.AspNetCore.Mvc;
+using Application.UseCases.Billeteras;
 
 namespace proyectoapi.Controllers
 {
@@ -8,12 +9,12 @@ namespace proyectoapi.Controllers
     [Route("api/v1/[controller]")]
     public class BilleterasController : ControllerBase
     {
-        private readonly IBilleteraCommand _billeteraCommand;
+        private readonly IDepositarBilleteraUseCase _depositarBilleteraUseCase;
         private readonly IBilleteraQuery _billeteraQuery;
 
-        public BilleterasController(IBilleteraCommand billeteraCommand, IBilleteraQuery billeteraQuery)
+        public BilleterasController(IDepositarBilleteraUseCase depositarBilleteraUseCase, IBilleteraQuery billeteraQuery)
         {
-            _billeteraCommand = billeteraCommand;
+            _depositarBilleteraUseCase = depositarBilleteraUseCase;
             _billeteraQuery = billeteraQuery;
         }
 
@@ -44,13 +45,14 @@ namespace proyectoapi.Controllers
         // POST: api/v1/billeteras/{billeteraId}/transacciones
         [HttpPost("{billeteraId}/transacciones")]
         public async Task<IActionResult> Depositar(int billeteraId, [FromBody] SolicitudDepositoDTO dto)
-        {
+        {   
+            /*
             if (dto.Monto <= 0)
             {
                 return BadRequest(new { mensaje = "El monto a depositar debe ser mayor a cero." });
             }
-
-            await _billeteraCommand.DepositarAsync(billeteraId, dto.Monto);
+            */
+            await _depositarBilleteraUseCase.EjecutarAsync(billeteraId, dto.Monto);
             return Ok(new { mensaje = $"Se acreditaron ${dto.Monto} correctamente a la billetera {billeteraId}." });
         }
 
