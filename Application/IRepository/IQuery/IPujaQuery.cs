@@ -9,8 +9,8 @@ namespace Application.IRepository.IQuery
 {
     public interface IPujaQuery
     {
-        Task<GetPujaDTO?> GetByIdAsync(int id);
+        Task<GetPujaDTO?> GetByIdAndSubastaIdAsync(int subastaId, int id);
         Task<IEnumerable<GetPujaDTO>> GetBySubastaIdAsync(int subastaId);
-        Task<IEnumerable<GetPujaDTO>> GetByUsuarioIdAsync(int usuarioId);
+        Task<IEnumerable<GetPujaDTO>> GetByUsuarioAndSubastaIdAsync(int subastaId, int usuarioId);
     }
 }

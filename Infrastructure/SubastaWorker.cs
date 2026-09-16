@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
+using Infrastructure.Hubs;
 
 namespace Infrastructure
 {
@@ -11,31 +13,23 @@ namespace Infrastructure
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<SubastaWorker> _logger;
-
-        public SubastaWorker(IServiceProvider serviceProvider, ILogger<SubastaWorker> logger)
+        private readonly IHubContext<SubastaHub> _hubContext;
+        public SubastaWorker(IServiceProvider serviceProvider, ILogger<SubastaWorker> logger, IHubContext<SubastaHub> hubContext)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _hubContext = hubContext;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Monitoreando el ciclo de vida de subastas...");
+            _logger.LogInformation("SubastaWorker iniciado. Monitoreando subastas vencidas...");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    await ActivarSubastasProgramadasAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error al procesar la activación automática de subastas.");
-                }
-
-                try
-                {
-                    await ProcesarsubastasVencidasIdsAsync();
+                    await ProcesarSubastasVencidasAsync();
                 }
                 catch (Exception ex)
                 {
@@ -46,112 +40,40 @@ namespace Infrastructure
             }
         }
 
-        // Cambios de estado con un Scope aislado para manejar cada subasta
-        private async Task ActivarSubastasProgramadasAsync()
+        private async Task ProcesarSubastasVencidasAsync()
         {
-            List<int> subastasProgramadasIds;
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var ahora = DateTime.UtcNow;
 
-            // Contexto para buscar subastas programadas por su ID
-            using (var scopeConsulta = _serviceProvider.CreateScope())
+            //PASO DE PROGRAMADA -> ACTIVA
+            var subastasParaActivar = await context.Set<Subasta>()
+                .Where(s => s.Estado == "PROGRAMADA" && s.FechaInicio <= ahora)
+                .ToListAsync();
+
+            if (subastasParaActivar.Any())
             {
-                var contextConsulta = scopeConsulta.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                var ahora = DateTime.UtcNow;
-
-                subastasProgramadasIds = await contextConsulta.Set<Subasta>()
-                    .AsNoTracking()
-                    .Where(s => s.Estado == "PROGRAMADA" && s.FechaInicio <= ahora)
-                    .Select(s => s.Id)
-                    .ToListAsync();
-            }
-
-            foreach (var subastaId in subastasProgramadasIds)
-            {
-                using var scope = _serviceProvider.CreateScope();
-
-                // Contexto para cambiar el estado de la subasta
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                try
+                foreach (var subasta in subastasParaActivar)
                 {
-                    var ahora = DateTime.UtcNow;
-
-                    var subasta = await context.Set<Subasta>()
-                        .FirstOrDefaultAsync(s =>
-                            s.Id == subastaId &&
-                            s.Estado == "PROGRAMADA" &&
-                            s.FechaInicio <= ahora);
-
-                    if (subasta == null) continue;
-
                     subasta.Estado = "ACTIVA";
                     subasta.Version++;
-
-                    context.Set<AuditoriaLog>().Add(new AuditoriaLog
-                    {
-                        Entidad = "Subasta",
-                        EntidadId = subasta.Id,
-                        Accion = "CAMBIO_ESTADO",
-                        UsuarioId = null,
-                        DetalleJson = $"{{\"mensaje\": \"Subasta #{subasta.Id} cambió de PROGRAMADA a ACTIVA automáticamente.\"}}",
-                        Fecha = DateTime.UtcNow
-                    });
-
-                    await context.SaveChangesAsync();
-
-                    _logger.LogInformation($"Subasta #{subasta.Id} activada automáticamente.");
+                    _logger.LogInformation($"Subasta #{subasta.Id} ha sido ACTIVADA automáticamente.");
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Error al activar automáticamente la subasta #{subastaId}.");
-                }
+                await context.SaveChangesAsync();
             }
-        }
+            //PASO DE ACTIVA -> DESIERTA / FINALIZADA
+            var subastasVencidas = await context.Set<Subasta>()
+                .Include(s => s.Pujas)
+                .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= ahora)
+                .ToListAsync();
 
+            if (!subastasVencidas.Any()) return;
 
-        private async Task ProcesarsubastasVencidasIdsAsync()
-        {
-            List<int> subastasVencidasIds;
-
-            //Contexto para buscar subastas activas por su ID
-            using (var scopeConsulta = _serviceProvider.CreateScope()) 
+            foreach (var subasta in subastasVencidas)
             {
-                var contextConsulta = scopeConsulta.ServiceProvider.GetRequiredService<AppDbContext>();
-
-                var ahora = DateTime.UtcNow;
-
-                subastasVencidasIds = await contextConsulta.Set<Subasta>()
-                    .AsNoTracking()
-                    .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= ahora)
-                    .Select(s => s.Id)
-                    .ToListAsync();
-            }
-
-            if (!subastasVencidasIds.Any()) return;
-
-            foreach (var subastaId in subastasVencidasIds)
-            {
-                using var scope = _serviceProvider.CreateScope();
-
-                // Contexto para cambiar el estado de la subasta
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
                 using var transaction = await context.Database.BeginTransactionAsync();
-
                 try
                 {
-                    var ahora = DateTime.UtcNow;
-
-                    var subasta = await context.Set<Subasta>()
-                        .Include(s => s.Pujas)
-                        .FirstOrDefaultAsync(s => s.Id == subastaId && s.Estado == "ACTIVA" && s.FechaFin <= ahora);
-
-                    if(subasta == null)
-                    {
-                        await transaction.RollbackAsync();
-                        continue;
-                    }
-
                     var pujaGanadora = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
 
                     if (pujaGanadora == null)
@@ -159,8 +81,8 @@ namespace Infrastructure
                         // CASO 1: Sin ofertas -> Estado DESIERTA
                         subasta.Estado = "DESIERTA";
                         subasta.Version++;
-
-                        context.Set<AuditoriaLog>().Add(new AuditoriaLog
+                        
+                        context.AuditoriasLog.Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
@@ -171,6 +93,17 @@ namespace Infrastructure
                         });
 
                         _logger.LogInformation($"Subasta #{subasta.Id} finalizada sin ofertas (DESIERTA).");
+
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        // NOTIFICACIÓN EN TIEMPO REAL VÍA SIGNALR
+                        await _hubContext.Clients.Group(subasta.Id.ToString())
+                            .SendAsync("SubastaFinalizada", new 
+                            { 
+                                SubastaId = subasta.Id, 
+                                Estado = "DESIERTA" 
+                            });
                     }
                     else
                     {
@@ -223,8 +156,8 @@ namespace Infrastructure
                             Fecha = DateTime.UtcNow,
                             SubastaId = subasta.Id
                         });
-                        
-                        context.Set<AuditoriaLog>().Add(new AuditoriaLog
+
+                        context.AuditoriasLog.Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
@@ -235,19 +168,26 @@ namespace Infrastructure
                         });
 
                         _logger.LogInformation($"Subasta #{subasta.Id} FINALIZADA. Ganador: Usuario #{pujaGanadora.CompradorId}.");
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        // NOTIFICACIÓN EN TIEMPO REAL VÍA SIGNALR
+                        await _hubContext.Clients.Group(subasta.Id.ToString())
+                            .SendAsync("SubastaFinalizada", new 
+                            { 
+                                SubastaId = subasta.Id, 
+                                Estado = "FINALIZADA",
+                                GanadorId = pujaGanadora.CompradorId,
+                                MontoFinal = pujaGanadora.Monto
+                            });
                     }
 
-                    await context.SaveChangesAsync();
-                    await transaction.CommitAsync();
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    _logger.LogError(ex, $"Error procesando el cambio de estado de la subasta #{subastaId}");
+                    _logger.LogError(ex, $"Error procesando el cierre de la subasta #{subasta.Id}");
                 }
             }
         }
-
-       
     }
 }

@@ -19,11 +19,11 @@ namespace Infrastructure.Repository.Query
             _context = context;
         }
 
-        public async Task<GetPujaDTO?> GetByIdAsync(int id)
+        public async Task<GetPujaDTO?> GetByIdAndSubastaIdAsync(int subastaId, int id)
         {
             return await _context.Pujas
                 .AsNoTracking()
-                .Where(p => p.Id == id)
+                .Where(p => p.Id == id && p.SubastaId == subastaId)
                 .Select(p => new GetPujaDTO
                 {
                     Id = p.Id,
@@ -51,11 +51,11 @@ namespace Infrastructure.Repository.Query
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<GetPujaDTO>> GetByUsuarioIdAsync(int usuarioId)
+        public async Task<IEnumerable<GetPujaDTO>> GetByUsuarioAndSubastaIdAsync(int subastaId, int usuarioId)
         {
             return await _context.Pujas
                 .AsNoTracking()
-                .Where(p => p.CompradorId == usuarioId)
+                .Where(p => p.CompradorId == usuarioId && p.SubastaId == subastaId)
                 .Select(p => new GetPujaDTO
                 {
                     Id = p.Id,
