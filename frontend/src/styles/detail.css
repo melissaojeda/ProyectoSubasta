@@ -1,0 +1,460 @@
+.detalle-subasta {
+  width: min(1160px, 100%);
+  margin: 0 auto;
+}
+
+.detalle-subasta > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detalle-subasta > header a {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.detalle-subasta > header a:hover {
+  color: var(--color-text);
+}
+
+.detalle-subasta > header span {
+  padding: 0.55rem 0.85rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.detalle-subasta > header span[data-estado='ACTIVA'] {
+  color: #4ade80;
+}
+
+.detalle-subasta > header span[data-estado='PROGRAMADA'] {
+  color: #fbbf24;
+}
+
+.detalle-subasta > header span[data-estado='FINALIZADA'] {
+  color: #94a3b8;
+}
+
+.detalle-subasta > header span[data-estado='DESIERTA'] {
+  color: #fb7185;
+}
+
+.detalle-subasta__principal {
+  display: grid;
+  grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(1.4rem, 4vw, 3rem);
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detalle-subasta__principal figure {
+  min-height: 330px;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #111b2c;
+}
+
+.detalle-subasta__principal figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detalle-subasta__principal > div > span {
+  color: #60a5fa;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.detalle-subasta__principal h1 {
+  margin: 0.35rem 0 0.8rem;
+  text-align: left;
+}
+
+.detalle-subasta__principal > div > p {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.detalle-subasta__principal dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1.5rem 0 0;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detalle-subasta__principal dl div {
+  padding: 0 0.8rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.detalle-subasta__principal dl div:first-child {
+  padding-left: 0;
+}
+
+.detalle-subasta__principal dl div:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.detalle-subasta__principal dt {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.detalle-subasta__principal dd {
+  margin: 0.25rem 0 0;
+  font-weight: 800;
+}
+
+.detalle-subasta__puja {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.4rem;
+  padding: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.24), rgba(16, 24, 39, 0.9));
+}
+
+.detalle-subasta__puja > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.detalle-subasta__puja > div > span {
+  color: #bfdbfe;
+  font-size: 0.72rem;
+}
+
+.detalle-subasta__puja strong,
+.detalle-subasta__puja .contador-subasta {
+  font-size: 1.2rem;
+  font-weight: 850;
+}
+
+.detalle-subasta__puja button {
+  min-height: 48px;
+  padding: 0 1.2rem;
+  border: 0;
+  border-radius: 11px;
+  background: #075985;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 850;
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.24);
+}
+
+.detalle-subasta__puja button:hover:not(:disabled) {
+  background: #0b6f9f;
+}
+
+.detalle-subasta__puja button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.detalle-subasta__historial {
+  margin-top: 2rem;
+}
+
+.historial-pujas {
+  padding-top: 0.2rem;
+}
+
+.historial-pujas > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.6rem;
+}
+
+.historial-pujas h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.historial-pujas header p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+}
+
+.historial-pujas > header > strong {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: #bfdbfe;
+}
+
+.historial-pujas ol {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.historial-pujas li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.3rem 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.historial-pujas li div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.historial-pujas time,
+.historial-pujas__vacio {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.historial-pujas li > span {
+  font-weight: 850;
+}
+
+.historial-pujas li small {
+  grid-column: 1 / -1;
+  color: #4ade80;
+}
+
+.modal-puja {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(3, 8, 18, 0.68);
+  backdrop-filter: blur(9px);
+}
+
+.modal-puja > section {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.25rem;
+  border: 1px solid #2c4162;
+  border-radius: 20px;
+  background: #0e1726;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.48);
+}
+
+.modal-puja > section > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.modal-puja > section > header span {
+  color: #4ade80;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.modal-puja h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.45rem;
+}
+
+.modal-puja__resumen {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.2rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-puja__resumen div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.modal-puja__resumen span,
+.modal-puja__oferta > span {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.modal-puja__resumen strong,
+.modal-puja__resumen .contador-subasta {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.modal-puja__oferta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.2rem 0.8rem;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+}
+
+.modal-puja__oferta > span,
+.modal-puja__oferta > strong {
+  grid-column: 1;
+}
+
+.modal-puja__oferta > strong {
+  font-size: 1.25rem;
+}
+
+.modal-puja__oferta button {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  min-height: 40px;
+  padding: 0 0.8rem;
+  border: 1px solid rgba(96, 165, 250, 0.55);
+  border-radius: 9px;
+  background: rgba(37, 99, 235, 0.16);
+  color: #dbeafe;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.modal-puja label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.modal-puja label input {
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: 0;
+  background: #09111e;
+  color: var(--color-text);
+}
+
+.modal-puja label input:focus {
+  border-color: #3b82f6;
+}
+
+.modal-puja label small {
+  color: #fb7185;
+}
+
+.modal-puja__confirmar {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: #075985;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.modal-puja__confirmar:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.modal-puja__aviso,
+.modal-puja__nota {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.modal-puja__aviso {
+  color: #93c5fd;
+}
+
+.modal-puja__nota {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 900px) {
+  .detalle-subasta__principal {
+    grid-template-columns: 1fr;
+  }
+
+  .detalle-subasta__principal figure {
+    min-height: 260px;
+  }
+
+  .detalle-subasta__principal dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem 0;
+  }
+
+  .detalle-subasta__principal dl div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .detalle-subasta__principal dl div:nth-child(3) {
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 620px) {
+  .detalle-subasta__principal figure {
+    min-height: 210px;
+  }
+
+  .detalle-subasta__principal dl,
+  .detalle-subasta__puja,
+  .modal-puja__resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .detalle-subasta__principal dl div {
+    padding: 0.65rem 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .detalle-subasta__principal dl div:last-child {
+    border-bottom: 0;
+  }
+
+  .modal-puja__oferta {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-puja__oferta > span,
+  .modal-puja__oferta > strong,
+  .modal-puja__oferta button {
+    grid-row: auto;
+    grid-column: auto;
+  }
+
+  .modal-puja__oferta button {
+    margin-top: 0.6rem;
+  }
+}

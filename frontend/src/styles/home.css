@@ -1,0 +1,95 @@
+.pagina-inicio {
+  width: min(1220px, 100%);
+  margin: 0 auto;
+}
+
+.pagina-inicio > header {
+  width: min(760px, 100%);
+  margin: 1.5rem auto 3.5rem;
+  text-align: center;
+}
+
+.pagina-inicio > header span {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #60a5fa;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pagina-inicio > header h1 {
+  margin: 0;
+}
+
+.pagina-inicio > header p {
+  margin: 0.9rem auto 1.4rem;
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.pagina-inicio > header a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: 11px;
+  background: #075985;
+  color: #fff;
+  font-weight: 800;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.pagina-inicio > header a:hover {
+  transform: translateY(-2px);
+  background: #0b6f9f;
+}
+
+.bloque-subastas {
+  margin-top: 2.8rem;
+}
+
+.bloque-subastas > header {
+  margin-bottom: 1rem;
+}
+
+.bloque-subastas h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.bloque-subastas > header p {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-muted);
+}
+
+.bloque-subastas > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .bloque-subastas > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .pagina-inicio > header {
+    margin-top: 0.5rem;
+  }
+
+  .bloque-subastas > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagina-inicio > header a {
+    transition: none;
+  }
+}

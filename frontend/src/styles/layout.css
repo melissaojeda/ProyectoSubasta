@@ -1,0 +1,75 @@
+.app-layout {
+  position: relative;
+  min-height: 100vh;
+}
+
+.app-layout__barra-acceso {
+  position: absolute;
+  top: 0.85rem;
+  right: clamp(1rem, 3vw, 2.5rem);
+  z-index: 15;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.app-layout__barra-acceso button {
+  min-height: 36px;
+  padding: 0 0.85rem;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.app-layout__ingresar {
+  border: 1px solid #3c5273;
+  background: transparent;
+  color: #dbeafe;
+}
+
+.app-layout__ingresar:hover {
+  border-color: #60a5fa;
+  background: rgba(19, 34, 58, 0.72);
+}
+
+.app-layout__registrarse {
+  border: 1px solid #075985;
+  background: #075985;
+  color: #fff;
+}
+
+.app-layout__registrarse:hover {
+  border-color: #0b6f9f;
+  background: #0b6f9f;
+}
+
+.app-layout__content {
+  min-width: 0;
+  min-height: calc(100vh - 48px);
+  padding:
+    clamp(0.8rem, 2vw, 1.6rem)
+    clamp(4.75rem, 6vw, 6.5rem)
+    clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.app-layout__content > h1 {
+  text-align: center;
+}
+
+@media (max-width: 1180px) {
+  .app-layout__barra-acceso {
+    position: static;
+    padding: 0.65rem 0.75rem 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-layout__barra-acceso {
+    display: none;
+  }
+
+  .app-layout__content {
+    padding: 0.8rem 1rem 96px;
+  }
+}
