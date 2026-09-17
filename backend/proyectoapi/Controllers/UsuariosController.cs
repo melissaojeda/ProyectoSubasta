@@ -88,5 +88,33 @@ namespace proyectoapi.Controllers
                 mensaje = "Usuario actualizado exitosamente."
             });
         }
+
+        // POST: api/v1/usuarios/login
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(
+            [FromBody] LoginUsuarioDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new
+                {
+                    mensaje = "Email y contraseña son obligatorios."
+                });
+            }
+
+            var usuario = await _usuarioQuery.LoginAsync(
+                dto.Email,
+                dto.Password);
+
+            if (usuario == null)
+            {
+                return Unauthorized(new
+                {
+                    mensaje = "Email o contraseña incorrectos."
+                });
+            }
+
+            return Ok(usuario);
+        }
     }
 }

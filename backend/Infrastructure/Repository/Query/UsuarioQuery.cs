@@ -49,5 +49,35 @@ namespace Infrastructure.Repository.Query
                 })
                 .ToListAsync();
         }
+
+        public async Task<GetUsuarioDTO?> LoginAsync(
+            string email,
+            string password)
+        {
+            var emailNormalizado = email.Trim().ToLower();
+
+            var usuario = await _context.Usuarios
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailNormalizado);
+
+            if (usuario == null)
+            {
+                return null;
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(password, usuario.PasswordHash))
+            {
+                return null;
+            }
+
+            return new GetUsuarioDTO
+            {
+                Id = usuario.Id,
+                Nombre = usuario.Nombre,
+                Apellido = usuario.Apellido,
+                Email = usuario.Email,
+                FechaRegistro = usuario.FechaRegistro
+            };
+        }
     }
 }

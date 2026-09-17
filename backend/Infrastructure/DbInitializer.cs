@@ -31,7 +31,7 @@ namespace Infrastructure.Datos
                     Nombre = "Vendedor",
                     Apellido = "Test",
                     Email = "vendedor@test.com",
-                    PasswordHash = "password123"
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123")
                 };
 
                 var comprador1 = new Usuario
@@ -39,7 +39,7 @@ namespace Infrastructure.Datos
                     Nombre = "Comprador",
                     Apellido = "Lider",
                     Email = "comprador1@test.com",
-                    PasswordHash = "password123"
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123")
                 };
 
                 var comprador2 = new Usuario
@@ -47,7 +47,7 @@ namespace Infrastructure.Datos
                     Nombre = "Comprador",
                     Apellido = "Habilitado",
                     Email = "comprador2@test.com",
-                    PasswordHash = "password123"
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123")
                 };
 
                 var sinFondos = new Usuario
@@ -55,7 +55,7 @@ namespace Infrastructure.Datos
                     Nombre = "Usuario",
                     Apellido = "SinFondos",
                     Email = "sinfondos@test.com",
-                    PasswordHash = "password123"
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123")
                 };
 
                 context.Usuarios.AddRange(vendedor, comprador1, comprador2, sinFondos);

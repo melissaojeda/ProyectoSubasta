@@ -19,6 +19,10 @@ namespace Infrastructure.Datos
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Usuario>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
             // Concurrencia Optimista
             modelBuilder.Entity<Billetera>()
                 .Property(b => b.Version)
