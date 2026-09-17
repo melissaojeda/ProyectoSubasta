@@ -27,6 +27,7 @@ namespace Infrastructure.Repository.Query
                 .Select(s => new GetSubastaDTO
                 {
                     Id = s.Id,
+                    VendedorId = s.VendedorId,
                     Titulo = s.Titulo,
                     Descripcion = s.Descripcion,
                     UrlImagen = s.UrlImagen,
@@ -50,6 +51,7 @@ namespace Infrastructure.Repository.Query
                 .Select(s => new GetSubastaDTO
                 {
                     Id = s.Id,
+                    VendedorId = s.VendedorId,
                     Titulo = s.Titulo,
                     Descripcion = s.Descripcion,
                     UrlImagen = s.UrlImagen,
@@ -74,6 +76,7 @@ namespace Infrastructure.Repository.Query
                 .Select(s => new GetSubastaDTO
                 {
                     Id = s.Id,
+                    VendedorId = s.VendedorId,
                     Titulo = s.Titulo,
                     Descripcion = s.Descripcion,
                     UrlImagen = s.UrlImagen,
@@ -98,6 +101,7 @@ namespace Infrastructure.Repository.Query
                 .Select(s => new GetSubastaDTO
                 {
                     Id = s.Id,
+                    VendedorId = s.VendedorId,
                     Titulo = s.Titulo,
                     Descripcion = s.Descripcion,
                     UrlImagen = s.UrlImagen,
@@ -170,6 +174,7 @@ namespace Infrastructure.Repository.Query
             return await query.Select(s => new GetSubastaDTO
                 {
                     Id = s.Id,
+                    VendedorId = s.VendedorId,
                     Titulo = s.Titulo,
                     Descripcion = s.Descripcion,
                     UrlImagen = s.UrlImagen,
@@ -197,6 +202,7 @@ namespace Infrastructure.Repository.Query
                 .Select(s => new GetSubastaDTO
                 {
                     Id = s.Id,
+                    VendedorId = s.VendedorId,
                     Titulo = s.Titulo,
                     Descripcion = s.Descripcion,
                     UrlImagen = s.UrlImagen,

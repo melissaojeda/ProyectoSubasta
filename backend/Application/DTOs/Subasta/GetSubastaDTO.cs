@@ -9,6 +9,7 @@ namespace Application.DTOs.Subasta
     public class GetSubastaDTO
     {
         public int Id { get; set; }
+        public int VendedorId { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string UrlImagen { get; set; } = string.Empty;

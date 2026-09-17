@@ -50,9 +50,62 @@ namespace proyectoapi.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateUsuarioDTO dto)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(dto.Nombre))
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { mensaje = "El nombre es obligatorio." });
+            }
+
+            if (dto.Nombre.Trim().Length > 20)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "El nombre no puede superar los 20 caracteres."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Apellido))
+            {
+                return BadRequest(new { mensaje = "El apellido es obligatorio." });
+            }
+
+            if (dto.Apellido.Trim().Length > 15)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "El apellido no puede superar los 15 caracteres."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Email))
+            {
+                return BadRequest(new { mensaje = "El email es obligatorio." });
+            }
+
+            try
+            {
+                var email = new System.Net.Mail.MailAddress(dto.Email.Trim());
+
+                if (email.Address != dto.Email.Trim())
+                {
+                    return BadRequest(new { mensaje = "El email no es válido." });
+                }
+            }
+            catch
+            {
+                return BadRequest(new { mensaje = "El email no es válido." });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Password))
+            {
+                return BadRequest(new { mensaje = "La contraseña es obligatoria." });
+            }
+
+            if (dto.Password.Length < 8)
+            {
+                return BadRequest(new
+                {
+                    mensaje = "La contraseña debe tener al menos 8 caracteres."
+                });
             }
 
             await _usuarioCommand.CreateAsync(dto);

@@ -25,9 +25,9 @@ namespace Infrastructure.Repository.Command
             {
                 VendedorId = dto.VendedorId,
                 CategoriaId = dto.CategoriaId,
-                Titulo = dto.Titulo,
-                Descripcion = dto.Descripcion,
-                UrlImagen = dto.UrlImagen,
+                Titulo = dto.Titulo.Trim(),
+                Descripcion = dto.Descripcion.Trim(),
+                UrlImagen = dto.UrlImagen.Trim(),
                 PrecioBase = dto.PrecioBase,
                 IncrementoMinimo = dto.IncrementoMinimo,
                 FechaInicio = dto.FechaInicio,

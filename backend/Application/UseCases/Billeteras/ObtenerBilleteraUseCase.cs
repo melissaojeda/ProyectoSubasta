@@ -23,6 +23,12 @@ public class DepositarBilleteraUseCase : IDepositarBilleteraUseCase
             throw new ArgumentException("El monto a depositar debe ser mayor a cero.");
         }
 
+        if (monto > 9_999_999.99m)
+        {
+            throw new ArgumentException(
+                "El monto a depositar no puede superar $9.999.999,99.");
+        }
+
         await _billeteraCommand.DepositarAsync(billeteraId, monto);
     }
 }
