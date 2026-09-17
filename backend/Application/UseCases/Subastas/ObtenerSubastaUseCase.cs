@@ -43,7 +43,7 @@ public class ObtenerSubastasUseCase : IObtenerSubastasUseCase
             throw new ArgumentException("El tamaño de página debe ser mayor o igual a 1.");
         }
 
-        return await _subastaQuery.GetAllAsync(
+        return await _subastaQuery.GetFiltradasAsync(
             estado,
             categoriaId,
             precioMin,

@@ -14,12 +14,14 @@ namespace proyectoapi.Controllers
         private readonly ICrearPujaUseCase _crearPujaUseCase;
         private readonly IPujaQuery _pujaQuery;
         private readonly IHubContext<SubastaHub> _hubContext;
+        private readonly ISubastaQuery _subastaQuery;
 
-        public PujasController(ICrearPujaUseCase crearPujaUseCase, IPujaQuery pujaQuery, IHubContext<SubastaHub> hubContext)
+        public PujasController(ICrearPujaUseCase crearPujaUseCase, IPujaQuery pujaQuery, IHubContext<SubastaHub> hubContext, ISubastaQuery subastaQuery)
         {
             _crearPujaUseCase = crearPujaUseCase;
             _pujaQuery = pujaQuery;
             _hubContext = hubContext;
+            _subastaQuery = subastaQuery;
         }
 
         // POST: api/v1/subastas/{subastaId}/pujas
@@ -34,12 +36,17 @@ namespace proyectoapi.Controllers
             // Ejecuta el Caso de Uso (Persistencia y Reglas de Negocio)
             await _crearPujaUseCase.EjecutarAsync(subastaId, dto);
 
+            var subastaActualizada = await _subastaQuery.GetByIdAsync(subastaId);
+
             // Emite la notificación en tiempo real vía SignalR
-            await _hubContext.Clients.Group(subastaId.ToString()).SendAsync("NuevaPujaRecibida", new
+            await _hubContext.Clients
+            .Group(subastaId.ToString())
+            .SendAsync("NuevaPujaRecibida", new
             {
                 SubastaId = subastaId,
                 CompradorId = dto.CompradorId,
-                Monto = dto.Monto
+                Monto = dto.Monto,
+                FechaFin = subastaActualizada?.FechaFin
             });
 
             return StatusCode(201, new { mensaje = "Puja realizada con éxito." });
@@ -79,6 +86,14 @@ namespace proyectoapi.Controllers
         {
             var pujas = await _pujaQuery.GetByUsuarioIdAsync(usuarioId);
             return Ok(pujas);
+        }
+
+        // GET: api/v1/usuarios/{usuarioId}/actividades/pujas
+        [HttpGet("~/api/v1/usuarios/{usuarioId}/actividades/pujas")]
+        public async Task<IActionResult> GetActividadesByUsuarioId(int usuarioId)
+        {
+            var actividades = await _pujaQuery.GetActividadesByUsuarioIdAsync(usuarioId);
+            return Ok(actividades);
         }
     }
 }

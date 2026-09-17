@@ -138,6 +138,10 @@ namespace Infrastructure
                         {
                             throw new InvalidOperationException("No se encontró la billetera del vendedor.");
                         }
+                        if (billeteraComprador.SaldoRetenido < pujaGanadora.Monto)
+                        {
+                            throw new InvalidOperationException("El saldo retenido del comprador no alcanza para liquidar la subasta.");
+                        }
 
                         billeteraComprador.SaldoRetenido -= pujaGanadora.Monto;
                         billeteraComprador.SaldoTotal -= pujaGanadora.Monto;

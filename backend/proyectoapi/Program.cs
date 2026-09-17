@@ -21,8 +21,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<IBilleteraCommand, BilleteraCommand>();
 builder.Services.AddScoped<IBilleteraQuery, BilleteraQuery>();
@@ -81,14 +80,6 @@ app.UseCors("AllowFrontend");
 app.UseMiddleware<proyectoapi.Middlewares.ManejoExcepcionesMiddleware>();
 
 app.UseAuthorization();
-
-
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Append("X-Api-version", "1.0");
-    await next();
-});
-
 
 app.MapControllers();
 

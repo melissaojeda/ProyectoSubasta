@@ -11,5 +11,6 @@ namespace Application.IRepository.IQuery
     {
         Task<GetUsuarioDTO?> GetByIdAsync(int id);
         Task<IEnumerable<GetUsuarioDTO>> GetAllAsync();
+        Task<GetUsuarioDTO?> LoginAsync(string email, string password);
     }
 }

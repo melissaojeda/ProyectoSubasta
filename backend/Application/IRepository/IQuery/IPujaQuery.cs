@@ -13,5 +13,6 @@ namespace Application.IRepository.IQuery
         Task<IEnumerable<GetPujaDTO>> GetBySubastaIdAsync(int subastaId);
         Task<IEnumerable<GetPujaDTO>> GetByUsuarioAndSubastaIdAsync(int subastaId, int usuarioId);
         Task<IEnumerable<GetPujaDTO>> GetByUsuarioIdAsync(int usuarioId);
+        Task<IEnumerable<GetActividadPujaDTO>> GetActividadesByUsuarioIdAsync(int usuarioId);
     }
 }
