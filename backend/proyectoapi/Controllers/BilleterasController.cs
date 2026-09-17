@@ -11,11 +11,13 @@ namespace proyectoapi.Controllers
     {
         private readonly IDepositarBilleteraUseCase _depositarBilleteraUseCase;
         private readonly IBilleteraQuery _billeteraQuery;
+        private readonly ITransaccionLedgerQuery _transaccionLedgerQuery;
 
-        public BilleterasController(IDepositarBilleteraUseCase depositarBilleteraUseCase, IBilleteraQuery billeteraQuery)
+        public BilleterasController(IDepositarBilleteraUseCase depositarBilleteraUseCase, IBilleteraQuery billeteraQuery, ITransaccionLedgerQuery transaccionLedgerQuery)
         {
             _depositarBilleteraUseCase = depositarBilleteraUseCase;
             _billeteraQuery = billeteraQuery;
+            _transaccionLedgerQuery = transaccionLedgerQuery;
         }
 
         // GET: api/v1/billeteras/{id}
@@ -40,6 +42,15 @@ namespace proyectoapi.Controllers
                 return NotFound(new { mensaje = "Billetera no encontrada para este usuario." });
             }
             return Ok(billetera);
+        }
+
+        // GET: api/v1/billeteras/{billeteraId}/transacciones
+        [HttpGet("{billeteraId}/transacciones")]
+        public async Task<IActionResult> GetTransacciones(int billeteraId)
+        {
+            var transacciones = await _transaccionLedgerQuery.GetByBilleteraIdAsync(billeteraId);
+
+            return Ok(transacciones);
         }
 
         // POST: api/v1/billeteras/{billeteraId}/transacciones

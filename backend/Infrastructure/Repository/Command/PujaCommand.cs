@@ -29,15 +29,39 @@ namespace Infrastructure.Repository.Command
 
             if (subasta == null)
                 throw new ArgumentException("La subasta no existe.");
-
             if (DateTime.UtcNow > subasta.FechaFin)
+            {
+                _context.AuditoriasLog.Add(new AuditoriaLog
+                {
+                    Entidad = "Puja",
+                    EntidadId = subastaId,
+                    Accion = "RECHAZADA_SUBASTA_FINALIZADA",
+                    UsuarioId = dto.CompradorId,
+                    DetalleJson = $"{{\"MontoIntentado\": {dto.Monto}, \"mensaje\": \"La subasta ya ha finalizado.\"}}",
+                    Fecha = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
                 throw new InvalidOperationException("La subasta ya ha finalizado.");
+            }
 
             //Validar que la subasta esté activa
             if (subasta.Estado != "ACTIVA")
             {
-                throw new InvalidOperationException(
-                    "La subasta no se encuentra activa.");
+                _context.AuditoriasLog.Add(new AuditoriaLog
+                {
+                    Entidad = "Puja",
+                    EntidadId = subastaId,
+                    Accion = "RECHAZADA_SUBASTA_NO_ACTIVA",
+                    UsuarioId = dto.CompradorId,
+                    DetalleJson = $"{{\"MontoIntentado\": {dto.Monto}, \"EstadoSubasta\": \"{subasta.Estado}\"}}",
+                    Fecha = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
+                throw new InvalidOperationException("La subasta no se encuentra activa.");
             }
 
             var pujaMaximaActual = await _context.Pujas
@@ -51,7 +75,21 @@ namespace Infrastructure.Repository.Command
                 : subasta.PrecioBase;
 
             if (dto.Monto < precioMinimoRequerido)
+            {
+                _context.AuditoriasLog.Add(new AuditoriaLog
+                {
+                    Entidad = "Puja",
+                    EntidadId = subastaId,
+                    Accion = "RECHAZADA_MONTO_INSUFICIENTE",
+                    UsuarioId = dto.CompradorId,
+                    DetalleJson = $"{{\"MontoIntentado\": {dto.Monto}, \"MontoMinimoRequerido\": {precioMinimoRequerido}}}",
+                    Fecha = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+
                 throw new ArgumentException($"El monto debe ser superior o igual al valor mínimo requerido (${precioMinimoRequerido}).");
+            }
 
             var billeteraNuevoPostor = await _context.Billeteras
                 .FirstOrDefaultAsync(b => b.UsuarioId == dto.CompradorId);
