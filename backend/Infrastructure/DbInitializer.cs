@@ -124,7 +124,7 @@ namespace Infrastructure.Datos
                     PrecioBase = 50000,
                     IncrementoMinimo = 2000,
                     FechaInicio = fechaActual.AddHours(-1),
-                    FechaFin = fechaActual.AddMinutes(2),
+                    FechaFin = fechaActual.AddSeconds(90),
                     Estado = "ACTIVA",
                     Version = 1
                 };
@@ -170,7 +170,7 @@ namespace Infrastructure.Datos
                     IncrementoMinimo = 5000,
                     FechaInicio = fechaActual.AddDays(-2),
                     FechaFin = fechaActual.AddDays(-1),
-                    Estado = "DESIERTA",
+                    Estado = "ACTIVA",
                     Version = 1
                 };
 

@@ -29,7 +29,18 @@ namespace Infrastructure.Repository.Command
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
             };
 
+            var billetera = new Billetera
+            {
+                Usuario = usuario,
+                SaldoTotal = 0,
+                SaldoDisponible = 0,
+                SaldoRetenido = 0,
+                Version = 0
+            };
+
             await _context.Usuarios.AddAsync(usuario);
+            await _context.Billeteras.AddAsync(billetera);
+
             await _context.SaveChangesAsync();
         }
 

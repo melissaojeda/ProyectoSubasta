@@ -29,7 +29,8 @@ namespace Infrastructure.Repository.Query
                     Id = u.Id,
                     Nombre = u.Nombre,
                     Apellido = u.Apellido,
-                    Email = u.Email
+                    Email = u.Email,
+                    FechaRegistro = u.FechaRegistro
                 })
                 .FirstOrDefaultAsync();
         }
@@ -43,7 +44,8 @@ namespace Infrastructure.Repository.Query
                     Id = u.Id,
                     Nombre = u.Nombre,
                     Apellido = u.Apellido,
-                    Email = u.Email
+                    Email = u.Email,
+                    FechaRegistro = u.FechaRegistro
                 })
                 .ToListAsync();
         }

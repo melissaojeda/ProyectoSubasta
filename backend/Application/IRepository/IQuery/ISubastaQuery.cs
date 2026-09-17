@@ -19,9 +19,9 @@ namespace Application.IRepository.IQuery
         int? categoriaId,
         decimal? precioMin,
         decimal? precioMax,
-        string? orden);
+        string? orden,
         int pagina,
-        int tamanioPagina
+        int tamanioPagina);
     }
 
 }

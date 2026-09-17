@@ -83,5 +83,33 @@ namespace Infrastructure.Repository.Query
                 })
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<GetActividadPujaDTO>> GetActividadesByUsuarioIdAsync(int usuarioId)
+        {
+            return await _context.Subastas
+                .AsNoTracking()
+                .Where(s => s.Pujas.Any(p => p.CompradorId == usuarioId))
+                .OrderByDescending(s => s.FechaFin)
+                .Select(s => new GetActividadPujaDTO
+                {
+                    SubastaId = s.Id,
+                    TituloSubasta = s.Titulo,
+                    EstadoSubasta = s.Estado,
+
+                    MejorPuja = s.Pujas.Max(p => p.Monto),
+
+                    MiMejorPuja = s.Pujas
+                        .Where(p => p.CompradorId == usuarioId)
+                        .Max(p => p.Monto),
+
+                    EsGanador = s.Estado == "FINALIZADA"
+                        ? (bool?)(s.Pujas
+                            .OrderByDescending(p => p.Monto)
+                            .Select(p => p.CompradorId)
+                            .FirstOrDefault() == usuarioId)
+                        : null
+                })
+                .ToListAsync();
+        }
     }
 }
