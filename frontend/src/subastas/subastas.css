@@ -1,0 +1,343 @@
+.tarjeta-subasta {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    box-shadow 170ms ease;
+}
+
+.tarjeta-subasta__detalle {
+  display: block;
+  color: inherit;
+}
+
+.tarjeta-subasta:hover {
+  transform: translateY(-4px);
+  border-color: rgba(59, 130, 246, 0.65);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.tarjeta-subasta figure {
+  position: relative;
+  display: grid;
+  height: 128px;
+  margin: 0;
+  place-items: center;
+  overflow: hidden;
+  background: #111b2c;
+  color: var(--color-text-muted);
+}
+
+.tarjeta-subasta figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 220ms ease;
+}
+
+.tarjeta-subasta:hover figure img {
+  transform: scale(1.035);
+}
+
+.tarjeta-subasta figure > div {
+  font-size: 0.82rem;
+}
+
+.tarjeta-subasta figcaption {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 0.38rem 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: rgba(8, 13, 23, 0.88);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.tarjeta-subasta figcaption[data-estado='ACTIVA'] {
+  color: #4ade80;
+}
+
+.tarjeta-subasta figcaption[data-estado='PROGRAMADA'] {
+  color: #fbbf24;
+}
+
+.tarjeta-subasta figcaption[data-estado='FINALIZADA'] {
+  color: #94a3b8;
+}
+
+.tarjeta-subasta figcaption[data-estado='DESIERTA'] {
+  color: #fb7185;
+}
+
+.tarjeta-subasta__detalle > section {
+  padding: 1rem;
+}
+
+.tarjeta-subasta__detalle > section > span {
+  color: #60a5fa;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.tarjeta-subasta h3 {
+  min-height: 2.8em;
+  margin: 0.35rem 0 1rem;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.tarjeta-subasta dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  margin: 0;
+}
+
+.tarjeta-subasta dl div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.tarjeta-subasta dl div:last-child {
+  align-items: flex-end;
+}
+
+.tarjeta-subasta dt {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.tarjeta-subasta dd {
+  margin: 0;
+  font-size: 1.14rem;
+  font-weight: 800;
+}
+
+.tarjeta-subasta__detalle footer {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.tarjeta-subasta__acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0 1rem 1rem;
+}
+
+.tarjeta-subasta__acciones a {
+  display: inline-flex;
+  width: 128px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.65rem;
+  border-radius: 9px;
+  font-size: 0.73rem;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.tarjeta-subasta__acciones a:active {
+  filter: brightness(0.82);
+  transform: scale(0.96);
+}
+
+.tarjeta-subasta__puja-rapida {
+  border: 1px solid #0b6f9f;
+  background: #064e73;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(6, 78, 115, 0.24);
+}
+
+.tarjeta-subasta__puja-rapida:hover {
+  transform: translateY(-1px);
+  background: #075985;
+}
+
+.tarjeta-subasta__mas-info {
+  margin-left: auto;
+  border: 1px solid #425673;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.tarjeta-subasta__mas-info:hover {
+  transform: translateY(-1px);
+  border-color: #6b82a4;
+  color: var(--color-text);
+  background: rgba(20, 31, 50, 0.55);
+}
+
+.contador-subasta[data-critico='true'] {
+  color: #f87171;
+  font-weight: 800;
+}
+
+.filtros-subastas {
+  width: 100%;
+  margin-bottom: 1.2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: rgba(16, 24, 39, 0.88);
+}
+
+.filtros-subastas > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+}
+
+.filtros-subastas > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filtros-subastas label,
+.filtros-subastas legend {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.filtros-subastas input,
+.filtros-subastas select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: 0;
+  background: #0c1422;
+  color: var(--color-text);
+}
+
+.filtros-subastas input:focus,
+.filtros-subastas select:focus {
+  border-color: #3b82f6;
+}
+
+.filtros-subastas > header > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.filtros-subastas > header > button::after {
+  width: 0;
+  height: 0;
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+  border-top: 6px solid currentColor;
+  content: '';
+  transition: transform 160ms ease;
+}
+
+.filtros-subastas > header > button[aria-expanded='true']::after {
+  transform: rotate(180deg);
+}
+
+.filtros-subastas button {
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.filtros-subastas button:hover {
+  background: #18243a;
+}
+
+.filtros-subastas__panel {
+  padding: 0.85rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.filtros-subastas__panel fieldset {
+  margin: 0 0 0.9rem;
+  padding: 0;
+  border: 0;
+}
+
+.filtros-subastas__panel fieldset div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.filtros-subastas__panel fieldset button {
+  color: var(--color-text-muted);
+}
+
+.filtros-subastas__panel fieldset button[data-activo='true'] {
+  border-color: rgba(59, 130, 246, 0.72);
+  background: var(--color-primary-soft);
+  color: #fff;
+}
+
+.filtros-subastas__panel > section {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.filtros-subastas__panel > section label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+@media (max-width: 1050px) {
+  .filtros-subastas__panel > section {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .filtros-subastas > header,
+  .filtros-subastas__panel > section {
+    grid-template-columns: 1fr;
+  }
+
+  .tarjeta-subasta figure {
+    height: 118px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjeta-subasta,
+  .tarjeta-subasta figure img,
+  .tarjeta-subasta__acciones a {
+    transition: none;
+  }
+}

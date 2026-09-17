@@ -1,0 +1,144 @@
+.crear-subasta {
+  width: min(980px, 100%);
+  margin: 0 auto;
+}
+
+.crear-subasta > header {
+  width: min(720px, 100%);
+  margin: 0.35rem auto 1.2rem;
+  text-align: center;
+}
+
+.crear-subasta > header span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #60a5fa;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.crear-subasta > header h1 {
+  font-size: clamp(1.75rem, 4vw, 2.3rem);
+}
+
+.crear-subasta > header p {
+  margin: 0.4rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.formulario-subasta {
+  display: grid;
+  gap: 1rem;
+}
+
+.formulario-subasta fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.formulario-subasta fieldset:first-of-type label:nth-of-type(3),
+.formulario-subasta fieldset:first-of-type label:nth-of-type(4) {
+  grid-column: 1 / -1;
+}
+
+.formulario-subasta legend {
+  padding: 0 0.35rem;
+  color: #bfdbfe;
+  font-weight: 800;
+}
+
+.formulario-subasta label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.formulario-subasta input,
+.formulario-subasta textarea,
+.formulario-subasta select {
+  width: 100%;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  outline: 0;
+  background: #0c1422;
+  color: var(--color-text);
+  resize: vertical;
+}
+
+.formulario-subasta input:focus,
+.formulario-subasta textarea:focus,
+.formulario-subasta select:focus {
+  border-color: #3b82f6;
+}
+
+.formulario-subasta [aria-invalid='true'] {
+  border-color: #fb7185;
+}
+
+.formulario-subasta label small {
+  color: #fb7185;
+  font-size: 0.72rem;
+}
+
+.formulario-subasta > footer {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: rgba(16, 24, 39, 0.88);
+}
+
+.formulario-subasta > footer p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.formulario-subasta > footer button {
+  min-height: 42px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: #075985;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.formulario-subasta > footer button:hover {
+  background: #0b6f9f;
+}
+
+@media (max-width: 650px) {
+  .formulario-subasta fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .formulario-subasta fieldset:first-of-type label:nth-of-type(3),
+  .formulario-subasta fieldset:first-of-type label:nth-of-type(4) {
+    grid-column: auto;
+  }
+
+  .formulario-subasta > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,66 @@
+.catalogo-subastas {
+  width: min(1220px, 100%);
+  margin: 0 auto;
+}
+
+.catalogo-subastas > header {
+  width: min(720px, 100%);
+  margin: 0.35rem auto 1.2rem;
+  text-align: center;
+}
+
+.catalogo-subastas > header span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #60a5fa;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.catalogo-subastas > header h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.3rem);
+}
+
+.catalogo-subastas > header p {
+  margin: 0.4rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.catalogo-subastas > p {
+  margin: 0 0 0.9rem;
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+}
+
+.catalogo-subastas__grilla {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 1180px) {
+  .catalogo-subastas__grilla {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .catalogo-subastas__grilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .catalogo-subastas > header {
+    margin-top: 0.5rem;
+  }
+
+  .catalogo-subastas__grilla {
+    grid-template-columns: 1fr;
+  }
+}
