@@ -10,7 +10,7 @@ public interface IObtenerSubastasUseCase
         int? categoriaId,
         decimal? precioMin,
         decimal? precioMax,
-        string? orden),
+        string? orden,
         int pagina,
         int tamanioPagina);
 }
