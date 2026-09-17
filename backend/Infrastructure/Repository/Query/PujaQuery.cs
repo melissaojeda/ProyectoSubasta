@@ -66,5 +66,22 @@ namespace Infrastructure.Repository.Query
                 })
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<GetPujaDTO>> GetByUsuarioIdAsync(int usuarioId)
+        {
+            return await _context.Pujas
+                .AsNoTracking()
+                .Where(p => p.CompradorId == usuarioId)
+                .OrderByDescending(p => p.FechaPuja)
+                .Select(p => new GetPujaDTO
+                {
+                    Id = p.Id,
+                    SubastaId = p.SubastaId,
+                    NombreComprador = p.Comprador.Nombre + " " + p.Comprador.Apellido,
+                    Monto = p.Monto,
+                    FechaPuja = p.FechaPuja
+                })
+                .ToListAsync();
+        }
     }
 }

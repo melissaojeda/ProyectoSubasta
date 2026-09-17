@@ -57,6 +57,17 @@ namespace Infrastructure
                 {
                     subasta.Estado = "ACTIVA";
                     subasta.Version++;
+
+                    context.AuditoriasLog.Add(new AuditoriaLog
+                    {
+                        Entidad = "Subasta",
+                        EntidadId = subasta.Id,
+                        Accion = "CAMBIO_ESTADO",
+                        UsuarioId = null,
+                        DetalleJson = $"{{\"mensaje\": \"Subasta #{subasta.Id} activada automáticamente. Estado cambiado de PROGRAMADA a ACTIVA.\"}}",
+                        Fecha = DateTime.UtcNow
+                    });
+
                     _logger.LogInformation($"Subasta #{subasta.Id} ha sido ACTIVADA automáticamente.");
                 }
                 await context.SaveChangesAsync();
@@ -120,14 +131,12 @@ namespace Infrastructure
                         // Validación de existencia de billeteras
                         if (billeteraComprador == null)
                         {
-                            throw new InvalidOperationException(
-                                "No se encontró la billetera del comprador ganador.");
+                            throw new InvalidOperationException("No se encontró la billetera del comprador ganador.");
                         }
 
                         if (billeteraVendedor == null)
                         {
-                            throw new InvalidOperationException(
-                                "No se encontró la billetera del vendedor.");
+                            throw new InvalidOperationException("No se encontró la billetera del vendedor.");
                         }
 
                         billeteraComprador.SaldoRetenido -= pujaGanadora.Monto;

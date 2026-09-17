@@ -13,5 +13,15 @@ namespace Application.IRepository.IQuery
         Task<IEnumerable<GetSubastaDTO>> GetAllAsync();
         Task<IEnumerable<GetSubastaDTO>> GetByEstadoAsync(string estado);
         Task<IEnumerable<GetSubastaDTO>> GetByCategoriaAsync(int categoriaId);
+        Task<IEnumerable<GetSubastaDTO>> GetByVendedorIdAsync(int vendedorId);
+        Task<IEnumerable<GetSubastaDTO>> GetFiltradasAsync(
+        string? estado,
+        int? categoriaId,
+        decimal? precioMin,
+        decimal? precioMax,
+        string? orden);
+        int pagina,
+        int tamanioPagina
     }
+
 }

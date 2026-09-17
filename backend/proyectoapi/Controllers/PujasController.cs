@@ -72,5 +72,13 @@ namespace proyectoapi.Controllers
             var pujas = await _pujaQuery.GetByUsuarioAndSubastaIdAsync(subastaId, usuarioId);
             return Ok(pujas);
         }
+
+        // GET: api/v1/usuarios/{usuarioId}/pujas
+        [HttpGet("~/api/v1/usuarios/{usuarioId}/pujas")]
+        public async Task<IActionResult> GetByUsuarioId(int usuarioId)
+        {
+            var pujas = await _pujaQuery.GetByUsuarioIdAsync(usuarioId);
+            return Ok(pujas);
+        }
     }
 }
