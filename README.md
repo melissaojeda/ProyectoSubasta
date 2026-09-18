@@ -3,7 +3,7 @@
 ## Tecnologías Utilizadas
 
 * **Backend:** Desarrollado con una arquitectura en capas (`Application`, `Domain`, `Infrastructure`, `proyectoapi`) utilizando C#, .NET 8, Entity Framework Core y PostgreSQL.
-* **Frontend:** Desarrollado con TypeScript, HTML y CSS.
+* **Frontend:** Desarrollado con React, TypeScript, Vite, React Router, HTML y CSS.
 * **Control de Concurrencia:** Optimistic Concurrency (HTTP 409 Conflict mediante tokens de versión).
 
 ---
@@ -40,6 +40,11 @@ Iniciar la aplicación backend:
 ```bash
 dotnet run --project backend/proyectoapi
 ```
+La API queda disponible en:
+
+* **API:** `http://localhost:5113`
+* **Swagger:** `http://localhost:5113/swagger`
+
 
 ### 3. Configurar y levantar el Frontend
 
@@ -60,6 +65,12 @@ Iniciar el entorno de desarrollo:
 ```bash
 npm run dev
 ```
+La aplicación queda disponible en:
+
+* **Frontend:** `http://localhost:5173`
+
+Para utilizar el sistema completo, el backend y el frontend deben permanecer ejecutándose al mismo tiempo.
+
 
 ---
 
@@ -67,17 +78,17 @@ npm run dev
 
 Para cumplir con el requisito de control de concurrencia, se desarrolló un script automatizado en PowerShell (`test-concurrency.ps1`) que dispara dos peticiones `POST` de puja idénticas en paralelo hacia una misma subasta utilizando trabajos en segundo plano (`Start-Job`).
 
-* La primera petición en registrarse actualiza la versión de la subasta con éxito (**HTTP 201 Created**).
-* La segunda petición intenta guardar utilizando una versión desactualizada, por lo que el sistema detecta el conflicto y la rechaza de manera segura (**HTTP 409 Conflict**).
+* Cuando ambas peticiones alcanzan concurrentemente la actualización de la misma versión de la subasta, una se completa correctamente (**HTTP 201 Created**) y la otra es rechazada por el control de concurrencia (**HTTP 409 Conflict**).
+* La prueba está preparada para una base de datos recién inicializada con los datos seed. Debe ejecutarse mientras la subasta de prueba "Notebook" continúe activa.
 
 ### Script de Prueba de Concurrencia Optimista
 
 ```powershell
-$apiUrl = "http://localhost:5113/api/v1/subastas/7/Pujas"
-$subastaId = 7
+$subastaId = 1
+$apiUrl = "http://localhost:5113/api/v1/subastas/$subastaId/pujas"
 
-$body1 = @{ CompradorId = 5; Monto = 1400000 } | ConvertTo-Json
-$body2 = @{ CompradorId = 6; Monto = 1400000 } | ConvertTo-Json
+$body1 = @{ CompradorId = 2; Monto = 50000 } | ConvertTo-Json
+$body2 = @{ CompradorId = 3; Monto = 50000 } | ConvertTo-Json
 
 # Envío de peticiones en paralelo
 $job1 = Start-Job -ScriptBlock {

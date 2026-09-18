@@ -1,9 +1,8 @@
-#Script de Prueba de Concurrencia Optimista
-$apiUrl = "http://localhost:5113/api/v1/subastas/7/Pujas"
-$subastaId = 7
+$subastaId = 1
+$apiUrl = "http://localhost:5113/api/v1/subastas/$subastaId/pujas"
 
-$body1 = @{ CompradorId = 5; Monto = 1500000 } | ConvertTo-Json
-$body2 = @{ CompradorId = 6; Monto = 1500000} | ConvertTo-Json
+$body1 = @{ CompradorId = 2; Monto = 50000 } | ConvertTo-Json
+$body2 = @{ CompradorId = 3; Monto = 50000 } | ConvertTo-Json
 
 #envio de peticiones en paralelo
 $job1 = Start-Job -ScriptBlock {
