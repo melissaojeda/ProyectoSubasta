@@ -214,10 +214,51 @@ namespace Infrastructure.Datos
 
                 context.Pujas.AddRange(puja1, puja2, pujaGanadora);
                 context.SaveChanges();
-                
+
             }
-            // SEED DE TRANSACCIONES LEDGER 
-            if (!context.TransaccionesLedger.Any()) 
+
+            // Completa imágenes de las subastas de prueba que se crearon
+            // antes de que UrlImagen se persistiera desde el frontend.
+            var imagenesSemilla = new Dictionary<string, string>
+            {
+                ["Notebook"] =
+                    "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=900&q=80",
+                ["Samsung Galaxy A17"] =
+                    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80",
+                ["Sandero 2023"] =
+                    "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80",
+                ["Moneda antigua de colección"] =
+                    "https://images.unsplash.com/photo-1621761191319-c6fb62004040?auto=format&fit=crop&w=900&q=80",
+                ["Cuadro Antiguo"] =
+                    "https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=900&q=80"
+            };
+
+            var subastasSemillaSinImagen = context.Subastas
+                .Where(s => s.UrlImagen == "")
+                .ToList();
+
+            var hayImagenesActualizadas = false;
+
+            foreach (var subasta in subastasSemillaSinImagen)
+            {
+                if (!imagenesSemilla.TryGetValue(
+                    subasta.Titulo,
+                    out var urlImagen))
+                {
+                    continue;
+                }
+
+                subasta.UrlImagen = urlImagen;
+                hayImagenesActualizadas = true;
+            }
+
+            if (hayImagenesActualizadas)
+            {
+                context.SaveChanges();
+            }
+
+            // SEED DE TRANSACCIONES LEDGER
+            if (!context.TransaccionesLedger.Any())
             {
                 var subastaActivaEstandar = context.Subastas.First(s => s.Titulo == "Notebook");
                 var comprador1 = context.Usuarios.First(u => u.Email == "comprador1@test.com");

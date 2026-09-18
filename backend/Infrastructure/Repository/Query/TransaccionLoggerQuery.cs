@@ -41,6 +41,7 @@ namespace Infrastructure.Repository.Query
             return await _context.TransaccionesLedger
                 .AsNoTracking()
                 .Where(t => t.BilleteraId == billeteraId)
+                .OrderByDescending(t => t.Fecha)
                 .Select(t => new GetTransaccionDTO
                 {
                     Id = t.Id,

@@ -40,6 +40,7 @@ namespace Infrastructure.Repository.Query
             return await _context.Pujas
                 .AsNoTracking()
                 .Where(p => p.SubastaId == subastaId)
+                .OrderByDescending(p => p.FechaPuja)
                 .Select(p => new GetPujaDTO
                 {
                     Id = p.Id,

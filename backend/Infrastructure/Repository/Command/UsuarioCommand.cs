@@ -7,6 +7,7 @@ using Application.DTOs.Usuario;
 using Application.IRepository.ICommand;
 using Domain.Entities;
 using Infrastructure.Datos;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repository.Command
 {
@@ -21,11 +22,21 @@ namespace Infrastructure.Repository.Command
 
         public async Task CreateAsync(CreateUsuarioDTO dto)
         {
+            var emailNormalizado = dto.Email.Trim().ToLowerInvariant();
+
+            var emailExistente = await _context.Usuarios
+                .AnyAsync(u => u.Email.ToLower() == emailNormalizado);
+
+            if (emailExistente)
+            {
+                throw new InvalidOperationException("Ya existe un usuario registrado con ese email.");
+            }
+
             var usuario = new Usuario
             {
                 Nombre = dto.Nombre,
                 Apellido = dto.Apellido,
-                Email = dto.Email,
+                Email = emailNormalizado,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password)
             };
 

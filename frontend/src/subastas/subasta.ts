@@ -29,6 +29,7 @@ export type Puja = {
 
 export type Subasta = {
   id: number
+  vendedorId: number
   titulo: string
   descripcion: string
   urlImagen: string
@@ -84,7 +85,8 @@ export function formatearMonto(monto: number) {
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(monto)
 }
 
@@ -197,6 +199,6 @@ export function ordenarSubastas(
 export function formatearFechaHora(fecha: string) {
   return new Intl.DateTimeFormat('es-AR', {
     dateStyle: 'short',
-    timeStyle: 'short',
+    timeStyle: 'medium',
   }).format(new Date(fecha))
 }

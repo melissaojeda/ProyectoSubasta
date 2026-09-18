@@ -368,8 +368,12 @@
 }
 
 .modal-puja__confirmar {
+  display: flex;
   width: 100%;
   min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   margin-top: 1rem;
   border: 0;
   border-radius: 10px;
@@ -393,6 +397,10 @@
 
 .modal-puja__aviso {
   color: #93c5fd;
+}
+
+.modal-puja__aviso--error {
+  color: #fda4af;
 }
 
 .modal-puja__nota {
@@ -457,4 +465,28 @@
   .modal-puja__oferta button {
     margin-top: 0.6rem;
   }
+}
+
+.detalle-subasta__estado-usuario {
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.detalle-subasta__estado-usuario[data-estado-participacion='liderando'] {
+  color: #4ade80;
+}
+
+.detalle-subasta__estado-usuario[data-estado-participacion='superado'] {
+  color: #fbbf24;
+}
+
+.detalle-subasta__principal figure > div {
+  display: grid;
+  min-height: 330px;
+  height: 100%;
+  place-items: center;
+  padding: 1rem;
+  color: var(--color-text-muted);
+  text-align: center;
 }

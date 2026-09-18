@@ -9,6 +9,10 @@ type HistorialPujasProps = {
 }
 
 function HistorialPujas({ pujas }: HistorialPujasProps) {
+  const mayorMonto = pujas.length > 0
+    ? Math.max(...pujas.map((puja) => puja.monto))
+    : 0
+
   return (
     <section className="historial-pujas">
       <header>
@@ -25,7 +29,7 @@ function HistorialPujas({ pujas }: HistorialPujasProps) {
         </p>
       ) : (
         <ol>
-          {pujas.map((puja, indice) => (
+          {pujas.map((puja) => (
             <li key={puja.id}>
               <div>
                 <strong>{puja.nombreComprador}</strong>
@@ -34,7 +38,7 @@ function HistorialPujas({ pujas }: HistorialPujasProps) {
                 </time>
               </div>
               <span>{formatearMonto(puja.monto)}</span>
-              {indice === 0 && <small>Oferta más alta</small>}
+              {puja.monto === mayorMonto && <small>Oferta más alta</small>}
             </li>
           ))}
         </ol>

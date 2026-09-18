@@ -7,10 +7,13 @@ import {
 } from './navigationItems'
 
 type SidebarProps = {
-  onPerfilClick: () => void
+  autenticado: boolean
+  onAccesoRequerido: () => void
 }
 
-function Sidebar({ onPerfilClick }: SidebarProps) {
+function Sidebar({ autenticado, onAccesoRequerido }: SidebarProps) {
+  const etiquetaPerfil = autenticado ? 'Mi perfil' : profileNavigationItem.label
+
   return (
     <aside className="sidebar" aria-label="Navegación principal">
       <header>
@@ -27,6 +30,12 @@ function Sidebar({ onPerfilClick }: SidebarProps) {
             to={item.to}
             end={item.end}
             title={item.label}
+            onClick={(event) => {
+              if (item.requiereSesion && !autenticado) {
+                event.preventDefault()
+                onAccesoRequerido()
+              }
+            }}
             className={({ isActive }) =>
               `sidebar__link${isActive ? ' sidebar__link--active' : ''}`
             }
@@ -40,14 +49,19 @@ function Sidebar({ onPerfilClick }: SidebarProps) {
       <footer>
         <NavLink
           to={profileNavigationItem.to}
-          title={profileNavigationItem.label}
-          onClick={onPerfilClick}
+          title={etiquetaPerfil}
+          onClick={(event) => {
+            if (!autenticado) {
+              event.preventDefault()
+              onAccesoRequerido()
+            }
+          }}
           className={({ isActive }) =>
             `sidebar__link${isActive ? ' sidebar__link--active' : ''}`
           }
         >
           <NavigationIcon name={profileNavigationItem.icon} />
-          <span>{profileNavigationItem.label}</span>
+          <span>{etiquetaPerfil}</span>
         </NavLink>
       </footer>
     </aside>
