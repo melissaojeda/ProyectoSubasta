@@ -205,7 +205,7 @@ function ModalAcceso({
                 <input
                   type="text"
                   autoComplete="given-name"
-                  minLength={3}
+                  minLength={2}
                   maxLength={20}
                   value={nombre}
                   disabled={enviando}
@@ -214,14 +214,14 @@ function ModalAcceso({
                     setMensaje('')
                   }}
                 />
-                <small>Máximo 20 caracteres.</small>
+                <small>Entre 2 y 20 caracteres.</small>
               </label>
               <label>
                 Apellido
                 <input
                   type="text"
                   autoComplete="family-name"
-                  minLength={3}
+                  minLength={2}
                   maxLength={15}
                   value={apellido}
                   disabled={enviando}
@@ -230,7 +230,7 @@ function ModalAcceso({
                     setMensaje('')
                   }}
                 />
-                <small>Máximo 15 caracteres.</small>
+                <small>Entre 2 y 15 caracteres.</small>
               </label>
             </div>
           )}

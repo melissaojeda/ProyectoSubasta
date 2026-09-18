@@ -7,7 +7,13 @@ import {
 type HistorialPujasProps = {
   pujas: Puja[]
 }
-
+function anonimizarNombre(nombreCompleto: string) {
+    return nombreCompleto
+        .split(' ')
+        .filter(Boolean)
+        .map((parte) => `${parte.charAt(0)}***`)
+        .join(' ')
+}
 function HistorialPujas({ pujas }: HistorialPujasProps) {
   const mayorMonto = pujas.length > 0
     ? Math.max(...pujas.map((puja) => puja.monto))
@@ -32,7 +38,7 @@ function HistorialPujas({ pujas }: HistorialPujasProps) {
           {pujas.map((puja) => (
             <li key={puja.id}>
               <div>
-                <strong>{puja.nombreComprador}</strong>
+                      <strong>{anonimizarNombre(puja.nombreComprador)}</strong>
                 <time dateTime={puja.fechaPuja}>
                   {formatearFechaHora(puja.fechaPuja)}
                 </time>
