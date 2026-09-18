@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import ContadorSubasta from './ContadorSubasta'
 import HistorialPujas from './HistorialPujas'
@@ -17,6 +18,9 @@ type DetalleSubastaContenidoProps = {
   mostrarPuja: boolean
   onAbrirPuja: () => void
   onCerrarPuja: () => void
+  onConfirmarPuja: (monto: number) => Promise<void>
+  esPropia: boolean
+  estadoParticipacion: 'LIDERANDO' | 'SUPERADO' | null
 }
 
 function DetalleSubastaContenido({
@@ -25,8 +29,13 @@ function DetalleSubastaContenido({
   mostrarPuja,
   onAbrirPuja,
   onCerrarPuja,
+  onConfirmarPuja,
+  esPropia,
+  estadoParticipacion,
 }: DetalleSubastaContenidoProps) {
-  const admitePujas = subasta.estado === 'ACTIVA'
+  const admitePujas = subasta.estado === 'ACTIVA' && !esPropia
+  const [urlImagenInvalida, setUrlImagenInvalida] = useState<string | null>(null)
+  const imagenInvalida = urlImagenInvalida === subasta.urlImagen
 
   return (
     <article className="detalle-subasta">
@@ -39,7 +48,17 @@ function DetalleSubastaContenido({
 
       <section className="detalle-subasta__principal">
         <figure>
-          <img src={subasta.urlImagen} alt={subasta.titulo} />
+          {!imagenInvalida && subasta.urlImagen ? (
+            <img
+              src={subasta.urlImagen}
+              alt={subasta.titulo}
+              onError={() => setUrlImagenInvalida(subasta.urlImagen)}
+            />
+          ) : (
+            <div role="img" aria-label="Imagen no disponible">
+              Imagen no disponible
+            </div>
+          )}
         </figure>
 
         <div>
@@ -70,6 +89,16 @@ function DetalleSubastaContenido({
             <div>
               <span>Oferta actual</span>
               <strong>{formatearMonto(obtenerPrecioActual(subasta))}</strong>
+              {estadoParticipacion && (
+                <small
+                  className="detalle-subasta__estado-usuario"
+                  data-estado-participacion={estadoParticipacion.toLowerCase()}
+                >
+                  {estadoParticipacion === 'LIDERANDO'
+                    ? 'Tu estado: Liderando'
+                    : 'Tu estado: Superado'}
+                </small>
+              )}
             </div>
 
             <div>
@@ -86,7 +115,11 @@ function DetalleSubastaContenido({
               disabled={!admitePujas}
               onClick={onAbrirPuja}
             >
-              {admitePujas ? 'Pujar ahora' : 'Pujas cerradas'}
+              {esPropia
+                ? 'Tu publicación'
+                : admitePujas
+                  ? 'Pujar ahora'
+                  : 'Pujas cerradas'}
             </button>
           </section>
         </div>
@@ -97,7 +130,11 @@ function DetalleSubastaContenido({
       </section>
 
       {mostrarPuja && admitePujas && (
-        <ModalPuja subasta={subasta} onCerrar={onCerrarPuja} />
+        <ModalPuja
+          subasta={subasta}
+          onCerrar={onCerrarPuja}
+          onConfirmar={onConfirmarPuja}
+        />
       )}
     </article>
   )

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { obtenerMensajeError } from '../api/http'
 import IconoCerrar from '../components/common/IconoCerrar'
+import Notificacion from '../components/common/Notificacion'
 import ContadorSubasta from './ContadorSubasta'
 import {
   formatearMonto,
@@ -10,26 +12,50 @@ import {
 type ModalPujaProps = {
   subasta: Subasta
   onCerrar: () => void
+  onConfirmar: (monto: number) => Promise<void>
 }
 
-function ModalPuja({ subasta, onCerrar }: ModalPujaProps) {
+const MONTO_MAXIMO_PUJA = 99_999_999.99
+
+function tieneHastaDosDecimales(valor: string) {
+  return /^\d+(?:\.\d{1,2})?$/.test(valor)
+}
+
+function ModalPuja({ subasta, onCerrar, onConfirmar }: ModalPujaProps) {
   const ofertaActual = obtenerPrecioActual(subasta)
-  const ofertaMinima = ofertaActual + subasta.incrementoMinimo
+  const ofertaMinima = subasta.cantidadPujas > 0
+    ? ofertaActual + subasta.incrementoMinimo
+    : subasta.precioBase
   const [monto, setMonto] = useState('')
-  const [aviso, setAviso] = useState('')
+  const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
 
   const montoNumerico = Number(monto)
   const montoValido =
     monto !== ''
-    && !Number.isNaN(montoNumerico)
+    && Number.isFinite(montoNumerico)
     && montoNumerico >= ofertaMinima
+    && montoNumerico <= MONTO_MAXIMO_PUJA
+    && tieneHastaDosDecimales(monto)
+
+  function obtenerErrorMonto() {
+    if (monto === '') return ''
+    if (!Number.isFinite(montoNumerico)) return 'Ingresá un monto válido.'
+    if (!tieneHastaDosDecimales(monto)) return 'La oferta puede tener como máximo 2 decimales.'
+    if (montoNumerico < ofertaMinima) return `La oferta debe ser de al menos ${formatearMonto(ofertaMinima)}.`
+    if (montoNumerico > MONTO_MAXIMO_PUJA) return `La oferta no puede superar ${formatearMonto(MONTO_MAXIMO_PUJA)}.`
+
+    return ''
+  }
+
+  const errorMonto = obtenerErrorMonto()
 
   useEffect(() => {
     const overflowAnterior = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
     function cerrarConEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !enviando) {
         onCerrar()
       }
     }
@@ -40,23 +66,31 @@ function ModalPuja({ subasta, onCerrar }: ModalPujaProps) {
       document.body.style.overflow = overflowAnterior
       window.removeEventListener('keydown', cerrarConEscape)
     }
-  }, [onCerrar])
+  }, [enviando, onCerrar])
 
   function usarOfertaMinima() {
+    if (ofertaMinima > MONTO_MAXIMO_PUJA) return
+
     setMonto(String(ofertaMinima))
-    setAviso('')
+    setError('')
   }
 
-  function validarPuja() {
-    if (!montoValido) {
-      return
-    }
+  async function confirmarPuja() {
+    if (!montoValido || enviando) return
 
-    setAviso('Tu oferta es válida y está lista para enviar.')
+    setEnviando(true)
+    setError('')
+
+    try {
+      await onConfirmar(montoNumerico)
+    } catch (errorPuja) {
+      setError(obtenerMensajeError(errorPuja))
+      setEnviando(false)
+    }
   }
 
   return (
-    <div className="modal-puja" onClick={onCerrar}>
+    <div className="modal-puja" onClick={enviando ? undefined : onCerrar}>
       <section
         role="dialog"
         aria-modal="true"
@@ -73,6 +107,7 @@ function ModalPuja({ subasta, onCerrar }: ModalPujaProps) {
             className="boton-cerrar"
             aria-label="Cerrar ventana de puja"
             onClick={onCerrar}
+            disabled={enviando}
           >
             <IconoCerrar />
           </button>
@@ -100,7 +135,11 @@ function ModalPuja({ subasta, onCerrar }: ModalPujaProps) {
         <section className="modal-puja__oferta">
           <span>Oferta mínima permitida</span>
           <strong>{formatearMonto(ofertaMinima)}</strong>
-          <button type="button" onClick={usarOfertaMinima}>
+          <button
+            type="button"
+            onClick={usarOfertaMinima}
+            disabled={enviando || ofertaMinima > MONTO_MAXIMO_PUJA}
+          >
             Usar oferta mínima
           </button>
         </section>
@@ -110,36 +149,44 @@ function ModalPuja({ subasta, onCerrar }: ModalPujaProps) {
           <input
             type="number"
             min={ofertaMinima}
-            step={subasta.incrementoMinimo}
+            max={MONTO_MAXIMO_PUJA}
+            step="0.01"
             placeholder={String(ofertaMinima)}
             value={monto}
+            disabled={enviando}
             onChange={(event) => {
               setMonto(event.target.value)
-              setAviso('')
+              setError('')
             }}
           />
-          {monto !== '' && !montoValido && (
-            <small>
-              La oferta debe ser de al menos {formatearMonto(ofertaMinima)}.
-            </small>
+          {errorMonto && <small>{errorMonto}</small>}
+          {ofertaMinima > MONTO_MAXIMO_PUJA && (
+            <small>La subasta alcanzó el monto máximo permitido para nuevas pujas.</small>
           )}
         </label>
 
         <button
           type="button"
           className="modal-puja__confirmar"
-          disabled={!montoValido}
-          onClick={validarPuja}
+          disabled={!montoValido || enviando}
+          onClick={() => void confirmarPuja()}
         >
-          Confirmar puja
+          {enviando && <span className="spinner-boton" aria-hidden="true" />}
+          {enviando ? 'Enviando oferta...' : 'Confirmar puja'}
         </button>
-
-        {aviso && <p className="modal-puja__aviso">{aviso}</p>}
 
         <p className="modal-puja__nota">
           Si llega una oferta durante el último minuto, se agregan
           2 minutos para que los demás puedan responder.
         </p>
+
+        {error && (
+          <Notificacion
+            mensaje={error}
+            tipo="error"
+            onCerrar={() => setError('')}
+          />
+        )}
       </section>
     </div>
   )

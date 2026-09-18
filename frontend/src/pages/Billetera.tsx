@@ -4,70 +4,33 @@ import {
   type FormEvent,
 } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  depositarSaldo,
+  obtenerBilleteraPorUsuario,
+  obtenerMovimientosBilletera,
+  type BilleteraVista,
+  type MovimientoBilletera,
+  type TipoMovimiento,
+} from '../api/billeteraApi'
+import { obtenerMensajeError } from '../api/http'
 import IconoCerrar from '../components/common/IconoCerrar'
+import MensajeEstado from '../components/common/MensajeEstado'
 import Notificacion from '../components/common/Notificacion'
+import { useSesion } from '../sesion/SesionContext'
 import { formatearFechaHora, formatearMonto } from '../subastas/subasta'
-import { subastasMock } from '../subastas/subastasMock'
 import '../styles/account.css'
-
-type BilleteraVista = {
-  id: number
-  usuarioId: number
-  saldoTotal: number
-  saldoRetenido: number
-  saldoDisponible: number
-}
-
-type TipoMovimiento =
-  | 'DEPOSITO'
-  | 'RETENCION_PUJA'
-  | 'LIBERACION_PUJA'
-  | 'PAGO_SUBASTA'
-  | 'INGRESO_VENTA'
-
-type MovimientoBilletera = {
-  id: number
-  billeteraId: number
-  tipo: TipoMovimiento
-  monto: number
-  fecha: string
-  subastaId: number | null
-}
 
 type ModalCargaSaldoProps = {
   saldoDisponible: number
   onCerrar: () => void
-  onConfirmar: (monto: number) => void
+  onConfirmar: (monto: number) => Promise<void>
 }
 
-const billeteraInicial: BilleteraVista = {
-  id: 1,
-  usuarioId: 2,
-  saldoTotal: 150000,
-  saldoRetenido: 45000,
-  saldoDisponible: 105000,
+const MONTO_MAXIMO_DEPOSITO = 9_999_999.99
+
+function tieneHastaDosDecimales(valor: string) {
+  return /^\d+(?:\.\d{1,2})?$/.test(valor)
 }
-
-const ahora = Date.now()
-
-const movimientosIniciales: MovimientoBilletera[] = [
-  {
-    id: 2,
-    billeteraId: 1,
-    tipo: 'RETENCION_PUJA',
-    monto: 45000,
-    fecha: new Date(ahora - 20 * 60 * 1000).toISOString(),
-    subastaId: 1,
-  },
-  {
-    id: 1,
-    billeteraId: 1,
-    tipo: 'DEPOSITO',
-    monto: 150000,
-    fecha: new Date(ahora - 2 * 60 * 60 * 1000).toISOString(),
-    subastaId: null,
-  },
-]
 
 function ModalCargaSaldo({
   saldoDisponible,
@@ -76,13 +39,14 @@ function ModalCargaSaldo({
 }: ModalCargaSaldoProps) {
   const [monto, setMonto] = useState('')
   const [error, setError] = useState('')
+  const [cargando, setCargando] = useState(false)
 
   useEffect(() => {
     const overflowAnterior = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
     function cerrarConEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') onCerrar()
+      if (event.key === 'Escape' && !cargando) onCerrar()
     }
 
     window.addEventListener('keydown', cerrarConEscape)
@@ -91,23 +55,41 @@ function ModalCargaSaldo({
       document.body.style.overflow = overflowAnterior
       window.removeEventListener('keydown', cerrarConEscape)
     }
-  }, [onCerrar])
+  }, [cargando, onCerrar])
 
-  function confirmar(event: FormEvent<HTMLFormElement>) {
+  async function confirmar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const valor = Number(monto)
 
-    if (monto === '' || Number.isNaN(valor) || valor <= 0) {
+    if (monto === '' || !Number.isFinite(valor) || valor <= 0) {
       setError('Ingresá un monto mayor a cero.')
       return
     }
 
-    onConfirmar(valor)
+    if (!tieneHastaDosDecimales(monto)) {
+      setError('El monto puede tener como máximo 2 decimales.')
+      return
+    }
+
+    if (valor > MONTO_MAXIMO_DEPOSITO) {
+      setError(`El monto no puede superar ${formatearMonto(MONTO_MAXIMO_DEPOSITO)}.`)
+      return
+    }
+
+    setCargando(true)
+    setError('')
+
+    try {
+      await onConfirmar(valor)
+    } catch (errorCarga) {
+      setError(obtenerMensajeError(errorCarga))
+      setCargando(false)
+    }
   }
 
   return (
-    <div className="modal-carga" onClick={onCerrar}>
+    <div className="modal-carga" onClick={cargando ? undefined : onCerrar}>
       <form
         role="dialog"
         aria-modal="true"
@@ -125,6 +107,7 @@ function ModalCargaSaldo({
             className="boton-cerrar"
             aria-label="Cerrar carga de saldo"
             onClick={onCerrar}
+            disabled={cargando}
           >
             <IconoCerrar />
           </button>
@@ -139,11 +122,14 @@ function ModalCargaSaldo({
           Monto a cargar
           <input
             type="number"
-            min="1"
+            min="0.01"
+            max={MONTO_MAXIMO_DEPOSITO}
+            step="0.01"
             inputMode="decimal"
             placeholder="Ej. 10000"
             value={monto}
             aria-invalid={Boolean(error)}
+            disabled={cargando}
             onChange={(event) => {
               setMonto(event.target.value)
               setError('')
@@ -153,25 +139,22 @@ function ModalCargaSaldo({
           {error && <small>{error}</small>}
         </label>
 
-        <button type="submit">Cargar saldo</button>
+        <button type="submit" disabled={cargando}>
+          {cargando && <span className="spinner-boton" aria-hidden="true" />}
+          {cargando ? 'Cargando saldo...' : 'Cargar saldo'}
+        </button>
       </form>
     </div>
   )
 }
 
 function obtenerDescripcionMovimiento(movimiento: MovimientoBilletera) {
-  const subasta = subastasMock.find(
-    (item) => item.id === movimiento.subastaId,
-  )
-
-  const titulo = subasta ? ` · ${subasta.titulo}` : ''
-
   if (movimiento.tipo === 'DEPOSITO') return 'Carga de saldo'
-  if (movimiento.tipo === 'RETENCION_PUJA') return `Saldo retenido${titulo}`
-  if (movimiento.tipo === 'LIBERACION_PUJA') return `Saldo liberado${titulo}`
-  if (movimiento.tipo === 'PAGO_SUBASTA') return `Compra concretada${titulo}`
+  if (movimiento.tipo === 'RETENCION_PUJA') return 'Saldo retenido por puja'
+  if (movimiento.tipo === 'LIBERACION_PUJA') return 'Saldo liberado de puja'
+  if (movimiento.tipo === 'PAGO_SUBASTA') return 'Compra concretada'
 
-  return `Venta concretada${titulo}`
+  return 'Ingreso por venta'
 }
 
 function obtenerPrefijoMonto(tipo: TipoMovimiento) {
@@ -180,37 +163,100 @@ function obtenerPrefijoMonto(tipo: TipoMovimiento) {
   return ''
 }
 
+async function obtenerDatosBilletera(
+  usuarioId: number,
+  signal?: AbortSignal,
+) {
+  const billetera = await obtenerBilleteraPorUsuario(usuarioId, signal)
+  const movimientos = await obtenerMovimientosBilletera(
+    billetera.id,
+    signal,
+  )
+
+  return { billetera, movimientos }
+}
+
 function Billetera() {
-  const [billetera, setBilletera] = useState(billeteraInicial)
-  const [movimientos, setMovimientos] = useState(movimientosIniciales)
+  const { usuario } = useSesion()
+  const [billetera, setBilletera] = useState<BilleteraVista | null>(null)
+  const [movimientos, setMovimientos] = useState<MovimientoBilletera[]>([])
   const [mostrarCarga, setMostrarCarga] = useState(false)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
   const [notificacion, setNotificacion] = useState('')
+  const [intento, setIntento] = useState(0)
+
+  useEffect(() => {
+    if (!usuario) return
+
+    const controller = new AbortController()
+
+    obtenerDatosBilletera(usuario.id, controller.signal)
+      .then(({ billetera: billeteraCargada, movimientos: movimientosCargados }) => {
+        if (controller.signal.aborted) return
+
+        setBilletera(billeteraCargada)
+        setMovimientos(movimientosCargados)
+        setError('')
+      })
+      .catch((errorCarga: unknown) => {
+        if (!controller.signal.aborted) {
+          setError(obtenerMensajeError(errorCarga))
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCargando(false)
+      })
+
+    return () => controller.abort()
+  }, [intento, usuario])
 
   const retencionActiva = movimientos.find(
     (movimiento) => movimiento.tipo === 'RETENCION_PUJA',
   )
 
-  function cargarSaldo(monto: number) {
-    setBilletera((actual) => ({
-      ...actual,
-      saldoTotal: actual.saldoTotal + monto,
-      saldoDisponible: actual.saldoDisponible + monto,
-    }))
+  function reintentar() {
+    setCargando(true)
+    setError('')
+    setIntento((actual) => actual + 1)
+  }
 
-    setMovimientos((actuales) => [
-      {
-        id: Date.now(),
-        billeteraId: billetera.id,
-        tipo: 'DEPOSITO',
-        monto,
-        fecha: new Date().toISOString(),
-        subastaId: null,
-      },
-      ...actuales,
-    ])
+  async function cargarSaldo(monto: number) {
+    if (!billetera || !usuario) return
 
+    await depositarSaldo(billetera.id, monto)
+
+    const {
+      billetera: billeteraActualizada,
+      movimientos: movimientosActualizados,
+    } = await obtenerDatosBilletera(usuario.id)
+
+    setBilletera(billeteraActualizada)
+    setMovimientos(movimientosActualizados)
     setMostrarCarga(false)
     setNotificacion('Saldo cargado correctamente.')
+  }
+
+  if (cargando) {
+    return (
+      <section className="billetera">
+        <header className="cuenta-header cuenta-header--simple">
+          <h1>Billetera</h1>
+        </header>
+        <div className="billetera__skeleton skeleton-bloque" aria-hidden="true" />
+      </section>
+    )
+  }
+
+  if (error || !billetera) {
+    return (
+      <MensajeEstado
+        titulo="No pudimos cargar tu billetera"
+        descripcion={error || 'No encontramos una billetera asociada a tu cuenta.'}
+        accion="Reintentar"
+        onAccion={reintentar}
+      />
+    )
   }
 
   return (
@@ -256,29 +302,33 @@ function Billetera() {
           </div>
         </header>
 
-        <ul>
-          {movimientos.map((movimiento) => (
-            <li key={movimiento.id} data-tipo={movimiento.tipo}>
-              <div>
-                <strong>{obtenerDescripcionMovimiento(movimiento)}</strong>
-                <div className="billetera__movimiento-meta">
-                  <time dateTime={movimiento.fecha}>
-                    {formatearFechaHora(movimiento.fecha)}
-                  </time>
-                  {movimiento.subastaId && (
-                    <Link to={`/subastas/${movimiento.subastaId}`}>
-                      Ver subasta
-                    </Link>
-                  )}
+        {movimientos.length === 0 ? (
+          <p className="billetera__vacio">Todavía no registraste movimientos.</p>
+        ) : (
+          <ul>
+            {movimientos.map((movimiento) => (
+              <li key={movimiento.id} data-tipo={movimiento.tipo}>
+                <div>
+                  <strong>{obtenerDescripcionMovimiento(movimiento)}</strong>
+                  <div className="billetera__movimiento-meta">
+                    <time dateTime={movimiento.fecha}>
+                      {formatearFechaHora(movimiento.fecha)}
+                    </time>
+                    {movimiento.subastaId && (
+                      <Link to={`/subastas/${movimiento.subastaId}`}>
+                        Ver subasta
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <span>
-                {obtenerPrefijoMonto(movimiento.tipo)}
-                {formatearMonto(movimiento.monto)}
-              </span>
-            </li>
-          ))}
-        </ul>
+                <span>
+                  {obtenerPrefijoMonto(movimiento.tipo)}
+                  {formatearMonto(movimiento.monto)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {mostrarCarga && (

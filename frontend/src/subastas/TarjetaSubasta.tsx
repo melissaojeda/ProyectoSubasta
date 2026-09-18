@@ -1,5 +1,7 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, type MouseEvent } from 'react'
+import { Link, useOutletContext } from 'react-router-dom'
+import type { AppLayoutContext } from '../components/layout/AppLayout'
+import { useSesion } from '../sesion/SesionContext'
 import ContadorSubasta from './ContadorSubasta'
 import {
   formatearMonto,
@@ -14,8 +16,19 @@ type TarjetaSubastaProps = {
 }
 
 function TarjetaSubasta({ subasta }: TarjetaSubastaProps) {
+  const { usuario } = useSesion()
+  const { abrirAcceso } = useOutletContext<AppLayoutContext>()
   const [imagenInvalida, setImagenInvalida] = useState(false)
   const admitePujas = subasta.estado === 'ACTIVA'
+  const esPropia = Boolean(usuario && usuario.id === subasta.vendedorId)
+  const puedePujar = admitePujas && !esPropia
+
+  function manejarPujaRapida(event: MouseEvent<HTMLAnchorElement>) {
+    if (usuario) return
+
+    event.preventDefault()
+    abrirAcceso('login')
+  }
 
   return (
     <article className="tarjeta-subasta">
@@ -69,10 +82,11 @@ function TarjetaSubasta({ subasta }: TarjetaSubastaProps) {
       </Link>
 
       <footer className="tarjeta-subasta__acciones">
-        {admitePujas && (
+        {puedePujar && (
           <Link
             to={`/subastas/${subasta.id}?pujar=1`}
             className="tarjeta-subasta__puja-rapida"
+            onClick={manejarPujaRapida}
           >
             Puja rápida
           </Link>

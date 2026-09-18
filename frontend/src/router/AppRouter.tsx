@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom'
+import RutaProtegida from '../components/common/RutaProtegida'
 import AppLayout from '../components/layout/AppLayout'
 import Actividad from '../pages/Actividad'
 import Billetera from '../pages/Billetera'
@@ -15,10 +16,38 @@ function AppRouter() {
         <Route path="/" element={<Inicio />} />
         <Route path="/subastas" element={<Subastas />} />
         <Route path="/subastas/:id" element={<DetalleSubasta />} />
-        <Route path="/crear-subasta" element={<CrearSubasta />} />
-        <Route path="/billetera" element={<Billetera />} />
-        <Route path="/actividad" element={<Actividad />} />
-        <Route path="/perfil" element={<Perfil />} />
+        <Route
+          path="/crear-subasta"
+          element={(
+            <RutaProtegida>
+              <CrearSubasta />
+            </RutaProtegida>
+          )}
+        />
+        <Route
+          path="/billetera"
+          element={(
+            <RutaProtegida>
+              <Billetera />
+            </RutaProtegida>
+          )}
+        />
+        <Route
+          path="/actividad"
+          element={(
+            <RutaProtegida>
+              <Actividad />
+            </RutaProtegida>
+          )}
+        />
+        <Route
+          path="/perfil"
+          element={(
+            <RutaProtegida>
+              <Perfil />
+            </RutaProtegida>
+          )}
+        />
       </Route>
     </Routes>
   )

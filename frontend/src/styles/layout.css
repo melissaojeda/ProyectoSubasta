@@ -4,13 +4,12 @@
 }
 
 .app-layout__barra-acceso {
-  position: absolute;
-  top: 0.85rem;
-  right: clamp(1rem, 3vw, 2.5rem);
-  z-index: 15;
   display: flex;
+  min-height: 54px;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.55rem;
+  padding: 0.65rem clamp(1rem, 3vw, 2.5rem) 0 78px;
 }
 
 .app-layout__barra-acceso button {
@@ -42,6 +41,40 @@
 .app-layout__registrarse:hover {
   border-color: #0b6f9f;
   background: #0b6f9f;
+}
+
+.app-layout__usuario {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 0.45rem;
+  padding-left: 0.8rem;
+  border: 1px solid #2f4668;
+  border-radius: 10px;
+  background: rgba(13, 23, 39, 0.86);
+}
+
+.app-layout__usuario a {
+  color: #dbeafe;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.app-layout__usuario a:hover {
+  color: #fff;
+}
+
+.app-layout__salir {
+  border: 0;
+  border-left: 1px solid #2f4668;
+  border-radius: 0 9px 9px 0 !important;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.app-layout__salir:hover {
+  background: rgba(19, 34, 58, 0.72);
+  color: #fff;
 }
 
 .app-layout__content {
