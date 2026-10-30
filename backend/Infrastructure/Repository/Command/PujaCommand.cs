@@ -27,7 +27,7 @@ namespace Infrastructure.Repository.Command
                 .FirstOrDefaultAsync(s => s.Id == subastaId);
 
             if (subasta == null)
-                throw new ArgumentException("La subasta no existe.");
+                throw new KeyNotFoundException("La subasta no existe.");
 
             if (subasta.VendedorId == dto.CompradorId)
             {
