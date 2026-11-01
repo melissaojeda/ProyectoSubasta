@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.12.12316.0 insiders
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{C7605ED3-101C-41C8-8AF0-8F19BA5E5E32}"
 EndProject
@@ -11,13 +11,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure", "Infrastru
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "proyectoapi", "proyectoapi\proyectoapi.csproj", "{10BE1113-40D2-4E2D-908A-1D23CB11A9FD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubastaYa.Tests", "SubastaYa.Tests\SubastaYa.Tests.csproj", "{FA7FCCE9-2A6E-46DE-B98A-0FC46C3323FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C7605ED3-101C-41C8-8AF0-8F19BA5E5E32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -36,5 +35,15 @@ Global
 		{10BE1113-40D2-4E2D-908A-1D23CB11A9FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10BE1113-40D2-4E2D-908A-1D23CB11A9FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10BE1113-40D2-4E2D-908A-1D23CB11A9FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA7FCCE9-2A6E-46DE-B98A-0FC46C3323FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA7FCCE9-2A6E-46DE-B98A-0FC46C3323FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA7FCCE9-2A6E-46DE-B98A-0FC46C3323FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA7FCCE9-2A6E-46DE-B98A-0FC46C3323FF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B7D387C2-F843-4039-ADDC-49D90E4A0BE3}
 	EndGlobalSection
 EndGlobal

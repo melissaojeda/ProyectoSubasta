@@ -57,12 +57,6 @@ namespace proyectoapi.Controllers
         [HttpPost("{billeteraId}/transacciones")]
         public async Task<IActionResult> Depositar(int billeteraId, [FromBody] SolicitudDepositoDTO dto)
         {   
-            /*
-            if (dto.Monto <= 0)
-            {
-                return BadRequest(new { mensaje = "El monto a depositar debe ser mayor a cero." });
-            }
-            */
             await _depositarBilleteraUseCase.EjecutarAsync(billeteraId, dto.Monto);
             return Ok(new { mensaje = $"Se acreditaron ${dto.Monto} correctamente a la billetera {billeteraId}." });
         }

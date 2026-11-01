@@ -33,7 +33,7 @@ namespace proyectoapi.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Ejecuta el Caso de Uso (Persistencia y Reglas de Negocio)
+            // Ejecuta el caso de uso que valida y coordina la creación de la puja.
             await _crearPujaUseCase.EjecutarAsync(subastaId, dto);
 
             var subastaActualizada = await _subastaQuery.GetByIdAsync(subastaId);

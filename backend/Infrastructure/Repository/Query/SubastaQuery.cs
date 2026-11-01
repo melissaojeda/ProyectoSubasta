@@ -39,7 +39,12 @@ namespace Infrastructure.Repository.Query
                     NombreVendedor = s.Vendedor.Nombre + " " + s.Vendedor.Apellido,
                     NombreCategoria = s.Categoria.Nombre,
                     MejorPuja = s.Pujas.Any() ? s.Pujas.Max(p => p.Monto) : 0,
-                    CantidadPujas = s.Pujas.Count()
+                    CantidadPujas = s.Pujas.Count(),
+                    Version = s.Version,
+                    MejorPostorId = s.Pujas
+                        .OrderByDescending(p => p.Monto)
+                        .Select(p => (int?)p.CompradorId)
+                        .FirstOrDefault()
                 })
                 .FirstOrDefaultAsync();
         }
