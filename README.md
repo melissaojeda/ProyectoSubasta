@@ -1,122 +1,143 @@
-# SubastaYa - Sistema de Subastas Online
 
-## Tecnologías Utilizadas
+# SubastaYa — Frontend
 
-* **Backend:** Desarrollado con una arquitectura en capas (`Application`, `Domain`, `Infrastructure`, `proyectoapi`) utilizando C#, .NET 8, Entity Framework Core y PostgreSQL.
-* **Frontend:** Desarrollado con React, TypeScript, Vite, React Router, HTML y CSS.
-* **Control de Concurrencia:** Optimistic Concurrency (HTTP 409 Conflict mediante tokens de versión).
+Frontend del sistema de subastas SubastaYa, desarrollado con React, TypeScript, Vite y React Router.
 
----
+## Requisitos
 
-## Requisitos Previos
+- Node.js y npm.
+- API de SubastaYa ejecutándose en `http://localhost:5113`.
+- PostgreSQL configurado para el backend.
 
-* **.NET SDK:** Versión 8.0 o superior
-* **Node.js y npm**
-* **PostgreSQL**
+## Iniciar la aplicación
 
----
-
-## Instrucciones de Instalación y Ejecución
-
-### 1. Clonar el repositorio
-
-```bash
-git clone https://github.com/melissaojeda/ProyectoSubasta.git
-cd ProyectoSubasta
-```
-
-### 2. Configurar y levantar el Backend
-
-Configurar la cadena de conexión en el archivo `appsettings.json`, ubicado en la carpeta `backend/proyectoapi/`.
-
-Ubicarse en la raíz del repositorio y aplicar las migraciones de Entity Framework hacia PostgreSQL:
-
-```bash
-dotnet ef database update --project backend/Infrastructure --startup-project backend/proyectoapi
-```
-
-Iniciar la aplicación backend:
-
-```bash
-dotnet run --project backend/proyectoapi
-```
-La API queda disponible en:
-
-* **API:** `http://localhost:5113`
-* **Swagger:** `http://localhost:5113/swagger`
-
-
-### 3. Configurar y levantar el Frontend
-
-Ir a la carpeta del frontend:
-
-```bash
-cd frontend
-```
-
-Instalar las dependencias:
+Desde la carpeta `frontend`:
 
 ```bash
 npm install
-```
-
-Iniciar el entorno de desarrollo:
-
-```bash
 npm run dev
 ```
-La aplicación queda disponible en:
 
-* **Frontend:** `http://localhost:5173`
+Abrir `http://localhost:5173`.
 
-Para utilizar el sistema completo, el backend y el frontend deben permanecer ejecutándose al mismo tiempo.
+Para construir la versión de producción:
 
-
----
-
-## Prueba de Concurrencia Optimista (Stress Test)
-
-Para cumplir con el requisito de control de concurrencia, se desarrolló un script automatizado en PowerShell (`test-concurrency.ps1`) que dispara dos peticiones `POST` de puja idénticas en paralelo hacia una misma subasta utilizando trabajos en segundo plano (`Start-Job`).
-
-* Cuando ambas peticiones alcanzan concurrentemente la actualización de la misma versión de la subasta, una se completa correctamente (**HTTP 201 Created**) y la otra es rechazada por el control de concurrencia (**HTTP 409 Conflict**).
-* La prueba está preparada para una base de datos recién inicializada con los datos seed. Debe ejecutarse mientras la subasta de prueba "Notebook" continúe activa.
-
-### Script de Prueba de Concurrencia Optimista
-
-```powershell
-$subastaId = 1
-$apiUrl = "http://localhost:5113/api/v1/subastas/$subastaId/pujas"
-
-$body1 = @{ CompradorId = 2; Monto = 50000 } | ConvertTo-Json
-$body2 = @{ CompradorId = 3; Monto = 50000 } | ConvertTo-Json
-
-# Envío de peticiones en paralelo
-$job1 = Start-Job -ScriptBlock {
-    param($url, $b)
-    try {
-        $response = Invoke-RestMethod -Uri $url -Method Post -Body $b -ContentType "application/json" -ErrorAction Stop
-        return "201 Created"
-    } catch {
-        return $_.Exception.Response.StatusCode.value__
-    }
-} -ArgumentList $apiUrl, $body1
-
-$job2 = Start-Job -ScriptBlock {
-    param($url, $b)
-    try {
-        $response = Invoke-RestMethod -Uri $url -Method Post -Body $b -ContentType "application/json" -ErrorAction Stop
-        return "201 Created"
-    } catch {
-        return $_.Exception.Response.StatusCode.value__
-    }
-} -ArgumentList $apiUrl, $body2
-
-# Esperamos ambos resultados simultáneamente
-$res1 = Receive-Job -Job $job1 -Wait
-$res2 = Receive-Job -Job $job2 -Wait
-
-Remove-Job $job1, $job2
-
-Write-Host "Respuesta Petición 1: $res1"
-Write-Host "Respuesta Petición 2: $res2"
+```bash
+npm run build
 ```
+
+Para ejecutar el análisis estático configurado:
+
+```bash
+npm run lint
+```
+
+## Organización de `src`
+
+- `pages/`: pantallas de inicio, búsqueda, detalle, creación de subastas, actividad, billetera y perfil.
+- `subastas/`: componentes relacionados con subastas y pujas.
+- `api/`: llamadas HTTP a la API y manejo de respuestas y errores.
+- `sesion/`: contexto de sesión en el frontend.
+- `router/`: navegación y rutas.
+- `components/`, `styles/`: componentes y estilos compartidos.
+
+## Integración con el backend
+
+La API utiliza rutas `api/v1`, por ejemplo:
+
+- `POST /api/v1/subastas`
+- `POST /api/v1/subastas/{subastaId}/pujas`
+- `GET /api/v1/subastas/{subastaId}`
+
+El backend debe estar iniciado para consultar subastas, crear publicaciones, pujar y ver billeteras.
+
+La URL base de la API puede configurarse mediante la variable de entorno `VITE_API_URL`.
+
+Por defecto, se utiliza `http://localhost:5113/api/v1`.
+
+## Notificaciones y validaciones
+
+El frontend informa al usuario sobre los resultados de las operaciones mediante notificaciones visuales.
+
+Se contemplan los siguientes escenarios:
+
+- Puja realizada correctamente.
+- Saldo insuficiente para realizar una oferta.
+- Oferta inferior al mínimo permitido.
+- Conflicto de concurrencia HTTP 409.
+- Extensión de la subasta por una oferta cercana al cierre.
+- Oferta superada por otro comprador.
+- Finalización de una subasta.
+
+Las notificaciones se muestran mediante el componente `Notificacion.tsx`.
+
+Cuando aparecen varias notificaciones simultáneamente, se organizan verticalmente para evitar superposiciones.
+
+El formulario de puja también incluye validaciones del monto y mensajes asociados a sus campos.
+
+## Estados de las subastas
+
+El frontend contempla los siguientes estados:
+
+- `PROGRAMADA`: muestra el tiempo restante hasta el inicio e impide realizar ofertas.
+- `ACTIVA`: permite realizar ofertas válidas.
+- `FINALIZADA`: informa que la subasta terminó y deshabilita las pujas.
+- `DESIERTA`: informa que terminó sin ofertas y deshabilita las pujas.
+
+El vendedor no puede pujar en su propia publicación.
+
+Para realizar una oferta desde la interfaz es necesario iniciar sesión.
+
+## Actualizaciones en tiempo real con SignalR
+
+El frontend utiliza `@microsoft/signalr` para conectarse al hub del backend:
+
+`/hubs/subasta`
+
+Al abrir el detalle de una publicación, el cliente establece una conexión y se une al grupo correspondiente a esa subasta mediante `UnirseASubasta`.
+
+Se reciben los siguientes eventos:
+
+### NuevaPujaRecibida
+
+Cuando se registra una oferta, el frontend actualiza:
+
+- Precio actual.
+- Historial de pujas.
+- Cantidad de ofertas.
+- Estado de participación del usuario.
+- Fecha de finalización, si hubo una extensión.
+
+### SubastaFinalizada
+
+Cuando el backend finaliza una subasta, el frontend:
+
+- Actualiza el estado de la publicación.
+- Actualiza el historial y la información disponible.
+- Deshabilita las nuevas ofertas.
+- Muestra un aviso informativo.
+
+### Reconexión automática
+
+Si SignalR pierde la conexión, el cliente intenta reconectarse automáticamente.
+
+Después de reconectarse, vuelve a unirse al grupo correspondiente a la subasta y actualiza sus datos.
+
+## Polling de respaldo
+
+El frontend conserva las consultas periódicas como mecanismo de respaldo.
+
+- Con SignalR conectado: comprueba los datos aproximadamente cada 30 segundos.
+- Sin SignalR: realiza consultas cada 2,5 segundos.
+
+Esto permite continuar actualizando la información cuando la conexión en tiempo real no está disponible.
+
+## Sesión
+
+La sesión se maneja actualmente desde el frontend.
+
+No hay autenticación JWT implementada.
+
+## Configuración del backend
+
+Consultar el `README.md` de la raíz del repositorio para configurar PostgreSQL, las migraciones y la API.
