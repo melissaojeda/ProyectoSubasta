@@ -1,143 +1,183 @@
 
-# SubastaYa — Frontend
+# SubastaYa - Sistema de Subastas Online
 
-Frontend del sistema de subastas SubastaYa, desarrollado con React, TypeScript, Vite y React Router.
+Sistema de subastas online con publicación de productos, pujas, billeteras virtuales, cierre automático de subastas y actualizaciones en tiempo real.
 
-## Requisitos
+## Tecnologías utilizadas
 
+- **Backend:** C#, .NET 8, ASP.NET Core, Entity Framework Core y PostgreSQL. Arquitectura en capas: `Application`, `Domain`, `Infrastructure` y `proyectoapi`.
+- **Frontend:** React, TypeScript, Vite, React Router, HTML y CSS.
+- **Tiempo real:** SignalR, con *polling* como mecanismo de respaldo.
+- **Control de concurrencia:** concurrencia optimista mediante tokens de versión, con respuestas HTTP 409 ante conflictos detectados.
+
+---
+
+## Requisitos previos
+
+- .NET SDK 8.0.
 - Node.js y npm.
-- API de SubastaYa ejecutándose en `http://localhost:5113`.
-- PostgreSQL configurado para el backend.
+- PostgreSQL.
+- Visual Studio o un entorno de desarrollo compatible.
+- Herramienta `dotnet ef` para administrar las migraciones de Entity Framework Core.
 
-## Iniciar la aplicación
+---
 
-Desde la carpeta `frontend`:
+## Instrucciones de instalación y ejecución
+
+### 1. Clonar el repositorio
 
 ```bash
+git clone https://github.com/melissaojeda/ProyectoSubasta.git
+cd ProyectoSubasta
+```
+
+### 2. Configurar PostgreSQL y el backend
+
+La cadena de conexión se configura **localmente mediante User Secrets de .NET**, sin guardar contraseñas reales en `backend/proyectoapi/appsettings.json`.
+
+**Desde Visual Studio:**
+
+1. Abrir el proyecto `proyectoapi`.
+2. Hacer clic derecho sobre `proyectoapi` en el Explorador de soluciones.
+3. Seleccionar **Manage User Secrets** (Administrar secretos de usuario).
+4. Configurar en `secrets.json` la conexión local, reemplazando `TU_CONTRASENA` por la contraseña de PostgreSQL:
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=SubastaYaDb;Username=postgres;Password=TU_CONTRASENA"
+  }
+}
+```
+
+**No subir `secrets.json` ni contraseñas al repositorio.** Cada integrante debe configurar su propia conexión.
+
+La carga automática de User Secrets corresponde al entorno `Development`. En otros entornos hay que proporcionar la conexión mediante un mecanismo de configuración apropiado, como variables de entorno.
+
+Desde la raíz del repositorio, aplicar las migraciones de Entity Framework Core:
+
+```bash
+dotnet ef database update --project backend/Infrastructure --startup-project backend/proyectoapi
+```
+
+Iniciar el backend:
+
+```bash
+dotnet run --project backend/proyectoapi
+```
+
+Con la configuración de desarrollo utilizada en el proyecto:
+
+- **API:** http://localhost:5113
+- **Swagger:** http://localhost:5113/swagger
+
+### 3. Configurar y ejecutar el frontend
+
+En otra terminal, desde la raíz del repositorio:
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Abrir `http://localhost:5173`.
+La aplicación de desarrollo queda disponible en http://localhost:5173.
 
-Para construir la versión de producción:
+Para generar la compilación de producción:
 
 ```bash
 npm run build
 ```
 
-Para ejecutar el análisis estático configurado:
+Para ejecutar el análisis estático:
 
 ```bash
 npm run lint
 ```
 
-## Organización de `src`
+**El backend y el frontend deben permanecer ejecutándose al mismo tiempo** para utilizar las funcionalidades del sistema.
 
-- `pages/`: pantallas de inicio, búsqueda, detalle, creación de subastas, actividad, billetera y perfil.
-- `subastas/`: componentes relacionados con subastas y pujas.
-- `api/`: llamadas HTTP a la API y manejo de respuestas y errores.
-- `sesion/`: contexto de sesión en el frontend.
-- `router/`: navegación y rutas.
-- `components/`, `styles/`: componentes y estilos compartidos.
+---
 
-## Integración con el backend
+## Actualizaciones en tiempo real
 
-La API utiliza rutas `api/v1`, por ejemplo:
+La pantalla de detalle de una subasta utiliza SignalR mediante `/hubs/subasta` y recibe los eventos `NuevaPujaRecibida` y `SubastaFinalizada`.
 
-- `POST /api/v1/subastas`
-- `POST /api/v1/subastas/{subastaId}/pujas`
-- `GET /api/v1/subastas/{subastaId}`
+El cliente dispone de reconexión automática y mantiene consultas periódicas (*polling*) como respaldo:
 
-El backend debe estar iniciado para consultar subastas, crear publicaciones, pujar y ver billeteras.
+- **Con SignalR conectado:** actualización de respaldo aproximadamente cada 30 segundos.
+- **Sin SignalR:** actualización aproximadamente cada 2,5 segundos.
 
-La URL base de la API puede configurarse mediante la variable de entorno `VITE_API_URL`.
+La sesión se gestiona actualmente desde el frontend. **No se ha implementado autenticación JWT.**
 
-Por defecto, se utiliza `http://localhost:5113/api/v1`.
+---
 
-## Notificaciones y validaciones
+## Prueba de concurrencia optimista (stress test)
 
-El frontend informa al usuario sobre los resultados de las operaciones mediante notificaciones visuales.
+El backend implementa control de concurrencia optimista para evitar inconsistencias cuando dos compradores intentan pujar sobre una misma subasta simultáneamente.
 
-Se contemplan los siguientes escenarios:
+El archivo `test-concurrency.ps1`, ubicado en la raíz del repositorio, permite realizar una prueba automatizada.
 
-- Puja realizada correctamente.
-- Saldo insuficiente para realizar una oferta.
-- Oferta inferior al mínimo permitido.
-- Conflicto de concurrencia HTTP 409.
-- Extensión de la subasta por una oferta cercana al cierre.
-- Oferta superada por otro comprador.
-- Finalización de una subasta.
+A diferencia de la versión inicial, **no depende de una subasta con ID fijo ni de que la subasta "Notebook" siga activa**.
 
-Las notificaciones se muestran mediante el componente `Notificacion.tsx`.
+### Preparación y ejecución
 
-Cuando aparecen varias notificaciones simultáneamente, se organizan verticalmente para evitar superposiciones.
+El script:
 
-El formulario de puja también incluye validaciones del monto y mensajes asociados a sus campos.
+1. Consulta una categoría existente (requiere que la base tenga al menos una categoría, por ejemplo, cargada mediante los datos iniciales).
+2. Crea usuarios de prueba y deposita fondos en las billeteras de los compradores.
+3. Crea una subasta de prueba y espera a que el proceso automático la active.
+4. Envía dos pujas simultáneas por el mismo monto.
+5. Comprueba los códigos HTTP y verifica que haya una sola puja registrada.
+6. Si obtiene HTTP 400 en vez de HTTP 409, reintenta con otra subasta de prueba, hasta cuatro intentos por defecto.
 
-## Estados de las subastas
+Con el backend ejecutándose, abrir PowerShell en la raíz del repositorio y ejecutar:
 
-El frontend contempla los siguientes estados:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\test-concurrency.ps1
+```
 
-- `PROGRAMADA`: muestra el tiempo restante hasta el inicio e impide realizar ofertas.
-- `ACTIVA`: permite realizar ofertas válidas.
-- `FINALIZADA`: informa que la subasta terminó y deshabilita las pujas.
-- `DESIERTA`: informa que terminó sin ofertas y deshabilita las pujas.
+### Resultados esperados
 
-El vendedor no puede pujar en su propia publicación.
+- **HTTP 201 Created:** una de las pujas fue aceptada.
+- **HTTP 409 Conflict:** se detectó un conflicto de concurrencia optimista cuando ambas operaciones compitieron sobre la misma versión.
+- **HTTP 400 Bad Request:** también puede ocurrir si la segunda petición se procesa después de la primera y deja de cumplir la validación de monto mínimo; esto no implica por sí solo un fallo de concurrencia.
+- **Integridad:** debe registrarse una sola puja; la petición rechazada no debe producir una retención de fondos indebida.
 
-Para realizar una oferta desde la interfaz es necesario iniciar sesión.
+**Importante:** enviar dos solicitudes en paralelo no garantiza reproducir un HTTP 409 en todas las ejecuciones.
 
-## Actualizaciones en tiempo real con SignalR
+El script solo considera confirmado ese escenario si efectivamente recibe el conflicto.
 
-El frontend utiliza `@microsoft/signalr` para conectarse al hub del backend:
+En las verificaciones del proyecto también se reprodujo el resultado HTTP 201/409 mediante una prueba adicional con Node.js.
 
-`/hubs/subasta`
+**Entorno de prueba:** el script crea registros y depósitos reales en la base de datos configurada. Ejecutarlo únicamente sobre una base de desarrollo o pruebas. Los datos creados permanecen en esa base.
 
-Al abrir el detalle de una publicación, el cliente establece una conexión y se une al grupo correspondiente a esa subasta mediante `UnirseASubasta`.
+---
 
-Se reciben los siguientes eventos:
+## Verificación del backend
 
-### NuevaPujaRecibida
+Ejecutar las pruebas automatizadas desde la raíz del repositorio:
 
-Cuando se registra una oferta, el frontend actualiza:
+```bash
+dotnet test backend/SubastaYa.sln
+```
 
-- Precio actual.
-- Historial de pujas.
-- Cantidad de ofertas.
-- Estado de participación del usuario.
-- Fecha de finalización, si hubo una extensión.
+Para verificar las migraciones instaladas:
 
-### SubastaFinalizada
+```bash
+dotnet ef migrations list --project backend/Infrastructure --startup-project backend/proyectoapi -- --environment Development
+```
 
-Cuando el backend finaliza una subasta, el frontend:
+La migración `20261030094424_ProtegerAuditoriasLog` agrega una protección en PostgreSQL para impedir modificaciones y eliminaciones de registros de auditoría.
 
-- Actualiza el estado de la publicación.
-- Actualiza el historial y la información disponible.
-- Deshabilita las nuevas ofertas.
-- Muestra un aviso informativo.
+También se pueden probar los endpoints desde Swagger, por ejemplo:
 
-### Reconexión automática
+- `GET /api/v1/categorias`
+- `GET /api/v1/subastas`
+- `GET /api/v1/subastas/{id}`
 
-Si SignalR pierde la conexión, el cliente intenta reconectarse automáticamente.
+---
 
-Después de reconectarse, vuelve a unirse al grupo correspondiente a la subasta y actualiza sus datos.
+## Documentación del frontend
 
-## Polling de respaldo
-
-El frontend conserva las consultas periódicas como mecanismo de respaldo.
-
-- Con SignalR conectado: comprueba los datos aproximadamente cada 30 segundos.
-- Sin SignalR: realiza consultas cada 2,5 segundos.
-
-Esto permite continuar actualizando la información cuando la conexión en tiempo real no está disponible.
-
-## Sesión
-
-La sesión se maneja actualmente desde el frontend.
-
-No hay autenticación JWT implementada.
-
-## Configuración del backend
-
-Consultar el `README.md` de la raíz del repositorio para configurar PostgreSQL, las migraciones y la API.
+Consultar [`frontend/README.md`](frontend/README.md) para conocer la organización de componentes, las rutas de la API, el funcionamiento de SignalR y los comandos de desarrollo del frontend.

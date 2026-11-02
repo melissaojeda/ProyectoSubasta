@@ -45,9 +45,10 @@ La API utiliza rutas `api/v1` (por ejemplo, `POST /api/v1/subastas` y
 `POST /api/v1/subastas/{subastaId}/pujas`). El backend debe estar iniciado
 para consultar subastas, crear publicaciones, pujar y ver billeteras.
 
-La pantalla de detalle actualiza información mediante consultas periódicas
-(*polling*). El frontend no usa todavía un cliente SignalR. La sesión se
-maneja actualmente desde el frontend; no hay autenticación JWT implementada.
+La pantalla de detalle utiliza SignalR mediante `/hubs/subasta` para recibir los eventos `NuevaPujaRecibida` y `SubastaFinalizada`.
+El cliente se une al grupo de la subasta y dispone de reconexión automática.
+
+Se mantiene el polling como respaldo: cada 2,5 segundos cuando SignalR está desconectado y aproximadamente cada 30 segundos cuando está conectado. La sesión se maneja actualmente desde el frontend; no hay autenticación JWT implementada.
 
 Consultar el `README.md` de la raíz del repositorio para configurar PostgreSQL,
 las migraciones y la API.
