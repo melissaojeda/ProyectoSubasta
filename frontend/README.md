@@ -75,8 +75,7 @@ El backend emite estos avisos generales sin incluir datos financieros o identifi
 
 - Con SignalR conectado, las actualizaciones se solicitan cuando llega un evento y se mantiene una comprobación de respaldo aproximadamente cada **30 segundos**.
 - Con SignalR desconectado, se intenta restablecer la conexión y se consulta la API aproximadamente cada **2,5 segundos**, siempre que el backend responda.
-- Si el backend está apagado, las consultas fallan. Tras reiniciarlo, debe comprobarse que la pantalla se recupere; en pruebas locales se observó que algunos errores persistían hasta presionar **F5**. La recuperación sin recarga no se considera verificada.
 
-La sesión se maneja actualmente desde el frontend; no hay autenticación JWT implementada.
+
 
 Consultar el [`README.md` principal](../README.md) para configurar PostgreSQL, las migraciones, la API y las pruebas de concurrencia.

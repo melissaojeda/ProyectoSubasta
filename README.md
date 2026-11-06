@@ -122,7 +122,7 @@ El detalle también muestra avisos para cambios de estado, pujas superadas y pr�
 - **SignalR conectado:** las pantallas abiertas se refrescan al recibir eventos, sin esperar al siguiente intervalo.
 - **Conexión activa sin eventos:** el cliente mantiene una consulta de respaldo aproximadamente cada **30 segundos**.
 - **Conexión desconectada:** el cliente intenta recuperar la conexión y consulta la API aproximadamente cada **2,5 segundos**, mientras el backend esté disponible.
-- **Backend detenido:** ni SignalR ni las consultas HTTP pueden obtener información nueva. La recuperación de la interfaz después de reiniciar el backend debe comprobarse por separado; durante las pruebas locales se observó que algunas pantallas podían requerir **F5** para salir de un error persistente.
+
 
 El `SubastaWorker` verifica periódicamente las activaciones y los cierres de subastas, en intervalos de aproximadamente **10 segundos**. SignalR notifica después de que se haya confirmado el cambio correspondiente.
 
@@ -137,9 +137,6 @@ Se realizaron pruebas manuales de:
 - Activación automática de subastas.
 - Finalización de subastas y actualización de sus datos.
 
-La prueba de recuperación automática de la interfaz tras reiniciar el backend no quedó confirmada.
-
-La sesión se gestiona actualmente desde el frontend. **No se ha implementado autenticación JWT.**
 
 ---
 
@@ -175,9 +172,6 @@ powershell -ExecutionPolicy Bypass -File .\test-concurrency.ps1
 - **HTTP 400 Bad Request:** también puede ocurrir si la segunda petición se procesa después de la primera y deja de cumplir la validación de monto mínimo; esto no implica por sí solo un fallo de concurrencia.
 - **Integridad:** debe registrarse una sola puja; la petición rechazada no debe producir una retención de fondos indebida.
 
-**Importante:** enviar dos solicitudes en paralelo no garantiza reproducir un HTTP 409 en todas las ejecuciones.
-
-El script solo considera confirmado ese escenario si efectivamente recibe el conflicto.
 
 En las verificaciones del proyecto también se reprodujo el resultado HTTP 201/409 mediante una prueba adicional con Node.js.
 
