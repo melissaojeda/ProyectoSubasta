@@ -9,7 +9,9 @@ namespace Application.IRepository.ICommand
 {
     public interface IPujaCommand
     {
-        Task CreateAsync(int subastaId, CreatePujaDTO dto);
+        Task CreateAsync(int subastaId, CreatePujaDTO dto,
+            int versionSubastaEsperada, int versionBilleteraEsperada, 
+            DateTime? nuevaFechaFin);
         Task SaveChangesAsync();
     }
 }

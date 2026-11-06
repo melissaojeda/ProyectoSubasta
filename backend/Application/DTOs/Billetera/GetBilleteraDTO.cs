@@ -13,5 +13,6 @@ namespace Application.DTOs.Billetera
         public decimal SaldoTotal { get; set; }
         public decimal SaldoRetenido { get; set; }
         public decimal SaldoDisponible { get; set; }
+        public int Version { get; set; }
     }
 }

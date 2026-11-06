@@ -2,6 +2,8 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_URL || 'http://localhost:5113/api/v1'
 ).replace(/\/+$/, '')
 
+export const HUB_URL = `${API_BASE_URL.replace(/\/api\/v1$/i, '')}/hubs/subasta`
+
 type RespuestaError = Record<string, unknown>
 
 export class ApiError extends Error {

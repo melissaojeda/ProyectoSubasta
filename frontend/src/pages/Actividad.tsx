@@ -17,6 +17,7 @@ import {
   type Subasta,
 } from '../subastas/subasta'
 import '../styles/account.css'
+import { useTiempoReal } from '../tiempo-real/TiempoRealContext'
 import '../styles/activity.css'
 
 type SeccionActividad = 'pujas' | 'publicaciones'
@@ -63,6 +64,7 @@ function Actividad() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [intento, setIntento] = useState(0)
+  const { revisionSubastas } = useTiempoReal()
 
   useEffect(() => {
     if (!usuario) return
@@ -78,6 +80,7 @@ function Actividad() {
         setParticipaciones(actividad)
         setPujas(pujasUsuario)
         setPublicaciones(publicacionesUsuario)
+        setError('')
         setCargando(false)
       })
       .catch((errorCarga: unknown) => {
@@ -92,7 +95,7 @@ function Actividad() {
       })
 
     return () => controller.abort()
-  }, [intento, usuario])
+  }, [intento, usuario, revisionSubastas])
 
   const titulosPorSubasta = useMemo(
     () => new Map(

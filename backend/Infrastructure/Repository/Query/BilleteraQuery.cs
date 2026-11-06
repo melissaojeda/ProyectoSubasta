@@ -30,8 +30,8 @@ namespace Infrastructure.Repository.Query
                     SaldoDisponible = b.SaldoDisponible,
                     SaldoRetenido = b.SaldoRetenido,
                     UsuarioId = b.UsuarioId,
-                    //probar
-                    SaldoTotal = b.SaldoDisponible + b.SaldoRetenido
+                    SaldoTotal = b.SaldoDisponible + b.SaldoRetenido,
+                    Version = b.Version
                 })
                 .FirstOrDefaultAsync();
         }
@@ -47,7 +47,8 @@ namespace Infrastructure.Repository.Query
                     SaldoDisponible = b.SaldoDisponible,
                     SaldoRetenido = b.SaldoRetenido,
                     UsuarioId = b.UsuarioId,
-                    SaldoTotal = b.SaldoDisponible + b.SaldoRetenido
+                    SaldoTotal = b.SaldoDisponible + b.SaldoRetenido,
+                    Version = b.Version
                 })
                 .FirstOrDefaultAsync();
         }

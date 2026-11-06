@@ -22,5 +22,7 @@ namespace Application.DTOs.Subasta
         public string NombreCategoria { get; set; } = string.Empty;
         public decimal MejorPuja { get; set; }
         public int CantidadPujas { get; set; }
+        public int Version { get; set; }
+        public int? MejorPostorId { get; set; }
     }
 }

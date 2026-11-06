@@ -1,75 +1,81 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# SubastaYa — Frontend
 
-Currently, two official plugins are available:
+Frontend del sistema de subastas SubastaYa, desarrollado con React, TypeScript, Vite y React Router.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Requisitos
 
-## React Compiler
+- Node.js y npm.
+- API de SubastaYa ejecutándose en `http://localhost:5113`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Iniciar la aplicación
 
-## Expanding the ESLint configuration
+Desde la carpeta `frontend`:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Abrir `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Para construir la versión de producción:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm run build
 ```
+
+Para ejecutar el análisis estático configurado:
+
+```bash
+npm run lint
+```
+
+## Organización de `src`
+
+- `pages/`: pantallas de inicio, catálogo, detalle, creación de subastas, actividad, billetera y perfil.
+- `subastas/`: componentes relacionados con subastas y pujas.
+- `api/`: llamadas HTTP a la API y manejo de respuestas y errores.
+- `sesion/`: contexto de sesión en el frontend.
+- `tiempo-real/`: conexión SignalR compartida, recepción de eventos y avisos de actualización.
+- `router/`: navegación y rutas.
+- `components/`, `styles/`: componentes y estilos compartidos.
+
+## Integración con el backend
+
+La API utiliza rutas `api/v1` (por ejemplo, `POST /api/v1/subastas` y `POST /api/v1/subastas/{subastaId}/pujas`).
+
+El backend debe estar iniciado para consultar subastas, crear publicaciones, pujar y ver billeteras.
+
+La URL de la API se obtiene de `VITE_API_URL`; si no está configurada, se utiliza `http://localhost:5113/api/v1`.
+
+A partir de esa dirección se construye la URL del hub SignalR: `/hubs/subasta`.
+
+### Actualización en tiempo real
+
+La aplicación utiliza `TiempoRealProvider`, definido en `src/tiempo-real/TiempoRealContext.tsx`, para mantener una conexión SignalR compartida.
+
+Los componentes usan `useTiempoReal()` para enterarse de los cambios y consultar nuevamente los datos mediante la API.
+
+| Evento | Actualización solicitada |
+|---|---|
+| `NuevaPujaRecibida` | Subastas, pujas, actividad y billeteras |
+| `SubastaActivada` | Subastas, catálogo y actividad |
+| `SubastaFinalizada` | Subastas, actividad y billeteras |
+| `SubastaCreada` | Listados y publicaciones |
+| `BilleteraActualizada` | Saldo y movimientos de billetera |
+
+Las pantallas de **Inicio**, **Catálogo**, **Detalle de subasta**, **Billetera** y **Mi actividad** reaccionan a los avisos que les corresponden.
+
+SignalR comunica que hubo un cambio; las cifras y los estados se obtienen de la API, no de los mensajes del hub.
+
+El backend emite estos avisos generales sin incluir datos financieros o identificadores de comprador.
+
+### Reconexión y polling
+
+- Con SignalR conectado, las actualizaciones se solicitan cuando llega un evento y se mantiene una comprobación de respaldo aproximadamente cada **30 segundos**.
+- Con SignalR desconectado, se intenta restablecer la conexión y se consulta la API aproximadamente cada **2,5 segundos**, siempre que el backend responda.
+
+
+
+Consultar el [`README.md` principal](../README.md) para configurar PostgreSQL, las migraciones, la API y las pruebas de concurrencia.

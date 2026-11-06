@@ -99,6 +99,16 @@ public class CrearSubastaUseCase : ICrearSubastaUseCase
                 "La fecha de fin debe ser posterior a la fecha de inicio.");
         }
 
+        if (await _categoriaQuery.GetByIdAsync(dto.CategoriaId) == null)
+        {
+            throw new ArgumentException("La categoría seleccionada no existe.");
+        }
+
+        if (await _usuarioQuery.GetByIdAsync(dto.VendedorId) == null)
+        {
+            throw new ArgumentException("El vendedor indicado no existe.");
+        }
+
         dto.Titulo = dto.Titulo.Trim();
         dto.Descripcion = dto.Descripcion.Trim();
         dto.UrlImagen = dto.UrlImagen.Trim();

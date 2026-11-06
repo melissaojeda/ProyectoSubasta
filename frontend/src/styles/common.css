@@ -413,3 +413,33 @@
     animation: none;
   }
 }
+
+#notificaciones {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(520px, calc(100% - 2rem));
+    max-height: calc(100vh - 36px);
+    overflow-y: auto;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+    #notificaciones .notificacion {
+        position: static;
+        width: 100%;
+        transform: none;
+        pointer-events: auto;
+    }
+
+@media (max-width: 620px) {
+    #notificaciones {
+        top: 10px;
+        width: calc(100% - 1.25rem);
+        max-height: calc(100vh - 20px);
+    }
+}

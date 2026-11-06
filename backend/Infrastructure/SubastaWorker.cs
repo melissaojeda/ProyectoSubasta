@@ -14,7 +14,11 @@ namespace Infrastructure
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<SubastaWorker> _logger;
         private readonly IHubContext<SubastaHub> _hubContext;
-        public SubastaWorker(IServiceProvider serviceProvider, ILogger<SubastaWorker> logger, IHubContext<SubastaHub> hubContext)
+
+        public SubastaWorker(
+            IServiceProvider serviceProvider,
+            ILogger<SubastaWorker> logger,
+            IHubContext<SubastaHub> hubContext)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -36,7 +40,14 @@ namespace Infrastructure
                     _logger.LogError(ex, "Error al procesar el cierre automático de subastas.");
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
             }
         }
 
@@ -46,7 +57,7 @@ namespace Infrastructure
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var ahora = DateTime.UtcNow;
 
-            //PASO DE PROGRAMADA -> ACTIVA
+            // PROGRAMADA -> ACTIVA
             var subastasParaActivar = await context.Set<Subasta>()
                 .Where(s => s.Estado == "PROGRAMADA" && s.FechaInicio <= ahora)
                 .ToListAsync();
@@ -68,32 +79,73 @@ namespace Infrastructure
                         Fecha = DateTime.UtcNow
                     });
 
-                    _logger.LogInformation($"Subasta #{subasta.Id} ha sido ACTIVADA automáticamente.");
+                    _logger.LogInformation("Subasta #{SubastaId} activada automaticamente.", subasta.Id);
                 }
+
+                // Nunca avisar antes de que el nuevo estado exista en BD.
                 await context.SaveChangesAsync();
+
+                foreach (var subasta in subastasParaActivar)
+                {
+                    try
+                    {
+                        await _hubContext.Clients.All
+                            .SendAsync("SubastaActivada", new
+                            {
+                                SubastaId = subasta.Id,
+                                Estado = "ACTIVA",
+                                FechaInicio = subasta.FechaInicio
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "Se activo la subasta #{SubastaId}, pero fallo la notificacion SignalR.",
+                            subasta.Id);
+                    }
+                }
             }
-            //PASO DE ACTIVA -> DESIERTA / FINALIZADA
-            var subastasVencidas = await context.Set<Subasta>()
-                .Include(s => s.Pujas)
+
+            // ACTIVA -> DESIERTA / FINALIZADA. Solo se comparten IDs entre iteraciones:
+            // los datos monetarios de una subasta nunca quedan en el contexto de otra.
+            var idsSubastasVencidas = await context.Set<Subasta>()
+                .AsNoTracking()
                 .Where(s => s.Estado == "ACTIVA" && s.FechaFin <= ahora)
+                .Select(s => s.Id)
                 .ToListAsync();
 
-            if (!subastasVencidas.Any()) return;
-
-            foreach (var subasta in subastasVencidas)
+            foreach (var subastaId in idsSubastasVencidas)
             {
-                using var transaction = await context.Database.BeginTransactionAsync();
+                using var scopeCierre = _serviceProvider.CreateScope();
+                var contextCierre = scopeCierre.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // Se vuelve a comprobar el estado y el vencimiento porque una puja
+                // pudo extender la subasta desde que se consultaron los IDs.
+                var subasta = await contextCierre.Set<Subasta>()
+                    .Include(s => s.Pujas)
+                    .FirstOrDefaultAsync(s => s.Id == subastaId
+                        && s.Estado == "ACTIVA"
+                        && s.FechaFin <= DateTime.UtcNow);
+
+                if (subasta == null)
+                    continue;
+
+                object? eventoConfirmado = null;
+                bool commitConfirmado = false;
+                await using var transaction = await contextCierre.Database.BeginTransactionAsync();
+
                 try
                 {
-                    var pujaGanadora = subasta.Pujas.OrderByDescending(p => p.Monto).FirstOrDefault();
+                    var pujaGanadora = subasta.Pujas
+                        .OrderByDescending(p => p.Monto)
+                        .FirstOrDefault();
 
                     if (pujaGanadora == null)
                     {
-                        // CASO 1: Sin ofertas -> Estado DESIERTA
                         subasta.Estado = "DESIERTA";
                         subasta.Version++;
-                        
-                        context.AuditoriasLog.Add(new AuditoriaLog
+
+                        contextCierre.AuditoriasLog.Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
@@ -103,56 +155,44 @@ namespace Infrastructure
                             Fecha = DateTime.UtcNow
                         });
 
-                        _logger.LogInformation($"Subasta #{subasta.Id} finalizada sin ofertas (DESIERTA).");
-
-                        await context.SaveChangesAsync();
+                        await contextCierre.SaveChangesAsync();
                         await transaction.CommitAsync();
+                        commitConfirmado = true;
 
-                        // NOTIFICACIÓN EN TIEMPO REAL VÍA SIGNALR
-                        await _hubContext.Clients.Group(subasta.Id.ToString())
-                            .SendAsync("SubastaFinalizada", new 
-                            { 
-                                SubastaId = subasta.Id, 
-                                Estado = "DESIERTA" 
-                            });
+                        eventoConfirmado = new
+                        {
+                            SubastaId = subasta.Id,
+                            Estado = "DESIERTA"
+                        };
+
+                        _logger.LogInformation("Subasta #{SubastaId} finalizada sin ofertas.", subasta.Id);
                     }
                     else
                     {
-                        // CASO 2: Con ganador -> Estado FINALIZADA y liquidación de fondos
                         subasta.Estado = "FINALIZADA";
                         subasta.Version++;
 
-                        var billeteraComprador = await context.Set<Billetera>()
+                        var billeteraComprador = await contextCierre.Set<Billetera>()
                             .FirstOrDefaultAsync(b => b.UsuarioId == pujaGanadora.CompradorId);
-
-                        var billeteraVendedor = await context.Set<Billetera>()
+                        var billeteraVendedor = await contextCierre.Set<Billetera>()
                             .FirstOrDefaultAsync(b => b.UsuarioId == subasta.VendedorId);
 
-                        // Validación de existencia de billeteras
                         if (billeteraComprador == null)
-                        {
                             throw new InvalidOperationException("No se encontró la billetera del comprador ganador.");
-                        }
-
                         if (billeteraVendedor == null)
-                        {
                             throw new InvalidOperationException("No se encontró la billetera del vendedor.");
-                        }
                         if (billeteraComprador.SaldoRetenido < pujaGanadora.Monto)
-                        {
                             throw new InvalidOperationException("El saldo retenido del comprador no alcanza para liquidar la subasta.");
-                        }
 
                         billeteraComprador.SaldoRetenido -= pujaGanadora.Monto;
                         billeteraComprador.SaldoTotal -= pujaGanadora.Monto;
-                        billeteraComprador.Version ++;
+                        billeteraComprador.Version++;
 
                         billeteraVendedor.SaldoDisponible += pujaGanadora.Monto;
                         billeteraVendedor.SaldoTotal += pujaGanadora.Monto;
                         billeteraVendedor.Version++;
 
-                        // Registro de transacciones en el ledger
-                        context.Set<TransaccionLedger>().Add(new TransaccionLedger
+                        contextCierre.Set<TransaccionLedger>().Add(new TransaccionLedger
                         {
                             BilleteraId = billeteraComprador.Id,
                             Tipo = "PAGO_SUBASTA",
@@ -161,7 +201,7 @@ namespace Infrastructure
                             SubastaId = subasta.Id
                         });
 
-                        context.Set<TransaccionLedger>().Add(new TransaccionLedger
+                        contextCierre.Set<TransaccionLedger>().Add(new TransaccionLedger
                         {
                             BilleteraId = billeteraVendedor.Id,
                             Tipo = "INGRESO_VENTA",
@@ -170,7 +210,7 @@ namespace Infrastructure
                             SubastaId = subasta.Id
                         });
 
-                        context.AuditoriasLog.Add(new AuditoriaLog
+                        contextCierre.AuditoriasLog.Add(new AuditoriaLog
                         {
                             Entidad = "Subasta",
                             EntidadId = subasta.Id,
@@ -180,25 +220,57 @@ namespace Infrastructure
                             Fecha = DateTime.UtcNow
                         });
 
-                        _logger.LogInformation($"Subasta #{subasta.Id} FINALIZADA. Ganador: Usuario #{pujaGanadora.CompradorId}.");
-                        await context.SaveChangesAsync();
+                        await contextCierre.SaveChangesAsync();
                         await transaction.CommitAsync();
-                        // NOTIFICACIÓN EN TIEMPO REAL VÍA SIGNALR
-                        await _hubContext.Clients.Group(subasta.Id.ToString())
-                            .SendAsync("SubastaFinalizada", new 
-                            { 
-                                SubastaId = subasta.Id, 
-                                Estado = "FINALIZADA",
-                                GanadorId = pujaGanadora.CompradorId,
-                                MontoFinal = pujaGanadora.Monto
-                            });
-                    }
+                        commitConfirmado = true;
 
+                        eventoConfirmado = new
+                        {
+                            SubastaId = subasta.Id,
+                            Estado = "FINALIZADA",
+                            MontoFinal = pujaGanadora.Monto
+                        };
+
+                        _logger.LogInformation("Subasta #{SubastaId} finalizada. Ganador: #{GanadorId}.",
+                            subasta.Id, pujaGanadora.CompradorId);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex, $"Error procesando el cierre de la subasta #{subasta.Id}");
+                    // La transaccion pudo fallar o ya estar cerrandose. Si el
+                    // rollback tambien falla, conservamos el error original.
+                    if (!commitConfirmado)
+                    {
+                        try
+                        {
+                            await transaction.RollbackAsync();
+                        }
+                        catch (Exception rollbackEx)
+                        {
+                            _logger.LogError(rollbackEx,
+                                "Error intentando revertir la subasta #{SubastaId}.", subasta.Id);
+                        }
+                    }
+
+                    _logger.LogError(ex, "Error procesando el cierre de la subasta #{SubastaId}.",
+                        subasta.Id);
+                }
+
+                // Canal de notificaciones fuera de la transaccion economica:
+                // si SignalR falla, nunca se deshace un cierre ya confirmado.
+                if (eventoConfirmado != null)
+                {
+                    try
+                    {
+                        await _hubContext.Clients.All
+                            .SendAsync("SubastaFinalizada", eventoConfirmado);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex,
+                            "La subasta #{SubastaId} se cerro, pero fallo la notificacion SignalR.",
+                            subasta.Id);
+                    }
                 }
             }
         }
