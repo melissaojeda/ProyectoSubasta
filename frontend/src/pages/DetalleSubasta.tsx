@@ -1,15 +1,12 @@
 
 import { useEffect, useRef, useState } from 'react'
-import {
-    HubConnectionBuilder,
-    HubConnectionState,
-} from '@microsoft/signalr'
+
 import {
     useOutletContext,
     useParams,
     useSearchParams,
 } from 'react-router-dom'
-import { ApiError, HUB_URL, obtenerMensajeError } from '../api/http'
+import { ApiError, obtenerMensajeError } from '../api/http'
 import {
     obtenerPujasPorSubasta,
     obtenerPujasUsuarioEnSubasta,
@@ -20,6 +17,7 @@ import MensajeEstado from '../components/common/MensajeEstado'
 import Notificacion from '../components/common/Notificacion'
 import type { AppLayoutContext } from '../components/layout/AppLayout'
 import { useSesion } from '../sesion/SesionContext'
+import { useTiempoReal } from '../tiempo-real/TiempoRealContext'
 import DetalleSubastaContenido from '../subastas/DetalleSubastaContenido'
 import SkeletonDetalleSubasta from '../subastas/SkeletonDetalleSubasta'
 import { formatearMonto, type Puja, type Subasta } from '../subastas/subasta'
@@ -85,8 +83,10 @@ function DetalleSubasta() {
     const [noEncontrada, setNoEncontrada] = useState(false)
     const [notificacion, setNotificacion] = useState<Aviso | null>(null)
     const [intento, setIntento] = useState(0)
+    const { revisionSubastas } = useTiempoReal()
 
     const fechaFinAnterior = useRef<string | null>(null)
+    const estadoAnterior = useRef<string | null>(null)
     const liderandoAnterior = useRef(false)
 
     const subastaId = Number(id)
@@ -147,6 +147,7 @@ function DetalleSubasta() {
                 if (controller.signal.aborted) return
 
                 fechaFinAnterior.current = subastaCargada.fechaFin
+                estadoAnterior.current = subastaCargada.estado
                 liderandoAnterior.current = estaLiderando(
                     subastaCargada,
                     propias,
@@ -182,260 +183,60 @@ function DetalleSubasta() {
         return () => controller.abort()
     }, [intento, subastaId, subastaIdValido, usuarioId])
 
-    // SignalR + polling de respaldo.
+    // Usa los eventos de la conexión compartida y su polling de respaldo.
     useEffect(() => {
-        if (!subastaIdValido) return
+        if (!subastaIdValido || cargando || noEncontrada || revisionSubastas === 0) return
 
         const controller = new AbortController()
 
-        let activo = true
-        let conectado = false
-        let iniciando = false
-        let actualizando = false
-        let refrescoPendiente = false
-        let ultimaActualizacion = Date.now()
+        obtenerDatosSubasta(subastaId, usuarioId, controller.signal)
+            .then(({ subasta: actual, pujas: nuevas, misPujas: propias }) => {
+                if (controller.signal.aborted) return
 
-        let temporizadorReconexion: number | undefined
-
-        const conexion = new HubConnectionBuilder()
-            .withUrl(HUB_URL)
-            .withAutomaticReconnect([0, 2000, 10000, 30000])
-            .build()
-
-        // Consultar y actualizar la información de la subasta.
-        async function actualizarDatos() {
-            if (!activo) return
-
-            // Evitar consultas simultáneas innecesarias.
-            if (actualizando) {
-                refrescoPendiente = true
-                return
-            }
-
-            actualizando = true
-
-            try {
-                const {
-                    subasta: subastaCargada,
-                    pujas: pujasCargadas,
-                    misPujas: propias,
-                } = await obtenerDatosSubasta(
-                    subastaId,
-                    usuarioId,
-                    controller.signal,
-                )
-
-                if (!activo || controller.signal.aborted) return
-
-                const extendida = fechaFueExtendida(
-                    fechaFinAnterior.current,
-                    subastaCargada.fechaFin,
-                )
-
-                const liderandoAhora = estaLiderando(
-                    subastaCargada,
-                    propias,
-                )
-
-                const fueSuperado = (
-                    liderandoAnterior.current
+                const estadoPrevio = estadoAnterior.current
+                const extendida = fechaFueExtendida(fechaFinAnterior.current, actual.fechaFin)
+                const liderandoAhora = estaLiderando(actual, propias)
+                const fueSuperado = liderandoAnterior.current
                     && !liderandoAhora
                     && propias.length > 0
-                    && subastaCargada.estado === 'ACTIVA'
-                )
+                    && actual.estado === 'ACTIVA'
 
-                fechaFinAnterior.current = subastaCargada.fechaFin
+                fechaFinAnterior.current = actual.fechaFin
+                estadoAnterior.current = actual.estado
                 liderandoAnterior.current = liderandoAhora
-                ultimaActualizacion = Date.now()
-
-                setSubasta(subastaCargada)
-                setPujas(pujasCargadas)
+                setSubasta(actual)
+                setPujas(nuevas)
                 setMisPujas(propias)
-                setNoEncontrada(false)
 
-                if (fueSuperado) {
+                if (estadoPrevio === 'PROGRAMADA' && actual.estado === 'ACTIVA') {
                     setNotificacion({
-                        mensaje: `Tu puja fue superada. La oferta actual es ${formatearMonto(subastaCargada.mejorPuja)}.`,
+                        mensaje: 'La subasta comenzó. Ya podés realizar ofertas.',
                         tipo: 'info',
                     })
-                } else if (
-                    extendida
-                    && subastaCargada.estado === 'ACTIVA'
-                ) {
+                } else if (estadoPrevio === 'ACTIVA'
+                    && (actual.estado === 'FINALIZADA' || actual.estado === 'DESIERTA')) {
+                    setNotificacion({
+                        mensaje: 'La subasta finalizó. Ya no se aceptan nuevas ofertas.',
+                        tipo: 'info',
+                    })
+                } else if (fueSuperado) {
+                    setNotificacion({
+                        mensaje: 'Tu puja fue superada. La oferta actual es ' + formatearMonto(actual.mejorPuja) + '.',
+                        tipo: 'info',
+                    })
+                } else if (extendida && actual.estado === 'ACTIVA') {
                     setNotificacion({
                         mensaje: 'La subasta se extendió 2 minutos porque hubo una oferta cerca del cierre.',
                         tipo: 'info',
                     })
                 }
-            } catch {
-                // Se conservan los últimos datos válidos.
-            } finally {
-                actualizando = false
-
-                if (refrescoPendiente && activo) {
-                    refrescoPendiente = false
-                    void actualizarDatos()
-                }
-            }
-        }
-
-        // Programar otro intento si falla la conexión.
-        function programarReconexion() {
-            if (
-                !activo
-                || temporizadorReconexion !== undefined
-            ) {
-                return
-            }
-
-            temporizadorReconexion = window.setTimeout(() => {
-                temporizadorReconexion = undefined
-                void iniciarConexion()
-            }, 5000)
-        }
-
-        // Conectar con el hub.
-        async function iniciarConexion() {
-            if (
-                !activo
-                || iniciando
-                || conexion.state !== HubConnectionState.Disconnected
-            ) {
-                return
-            }
-
-            iniciando = true
-
-            try {
-                await conexion.start()
-
-                if (!activo) {
-                    await conexion.stop()
-                    return
-                }
-
-                // Unirse al grupo correspondiente a esta subasta.
-                await conexion.invoke(
-                    'UnirseASubasta',
-                    String(subastaId),
-                )
-
-                if (!activo) {
-                    await conexion.stop()
-                    return
-                }
-
-                conectado = true
-
-                // Sincronizar después de establecer la conexión.
-                void actualizarDatos()
-            } catch {
-                conectado = false
-
-                try {
-                    await conexion.stop()
-                } catch {
-                    // Se mantiene disponible el polling.
-                }
-
-                if (activo) {
-                    programarReconexion()
-                }
-            } finally {
-                iniciando = false
-            }
-        }
-
-        // Aviso de nueva oferta desde el backend.
-        conexion.on('NuevaPujaRecibida', () => {
-            if (!activo) return
-
-            void actualizarDatos()
-        })
-
-        // Aviso de finalización desde el backend.
-        conexion.on('SubastaFinalizada', () => {
-            if (!activo) return
-
-            void actualizarDatos()
-
-            setNotificacion({
-                mensaje: 'La subasta finalizó. Ya no se aceptan nuevas ofertas.',
-                tipo: 'info',
             })
-        })
+            .catch(() => {
+                // Conservamos los últimos datos válidos hasta el siguiente refresco.
+            })
 
-        // Durante una desconexión se utiliza el polling.
-        conexion.onreconnecting(() => {
-            conectado = false
-        })
-
-        // Al reconectarse, volver a unirse al grupo.
-        conexion.onreconnected(() => {
-            if (!activo) return
-
-            void conexion
-                .invoke('UnirseASubasta', String(subastaId))
-                .then(() => {
-                    if (!activo) return
-
-                    conectado = true
-                    void actualizarDatos()
-                })
-                .catch(() => {
-                    conectado = false
-
-                    void conexion
-                        .stop()
-                        .catch(() => {
-                            // El polling sigue disponible.
-                        })
-                        .finally(() => {
-                            programarReconexion()
-                        })
-                })
-        })
-
-        // Si se cierra definitivamente, intentar conectar otra vez.
-        conexion.onclose(() => {
-            conectado = false
-            programarReconexion()
-        })
-
-        // Posponer el inicio para evitar conexiones duplicadas
-        // durante la comprobación de efectos de React StrictMode.
-        const temporizadorInicio = window.setTimeout(() => {
-            void iniciarConexion()
-        }, 0)
-
-        // Polling:
-        // Desconectado: cada 2,5 segundos.
-        // Conectado: comprobación aproximadamente cada 30 segundos.
-        const intervalo = window.setInterval(() => {
-            if (
-                !conectado
-                || Date.now() - ultimaActualizacion >= 30000
-            ) {
-                void actualizarDatos()
-            }
-        }, 2500)
-
-        // Limpieza al cambiar de subasta o salir del detalle.
-        return () => {
-            activo = false
-
-            window.clearTimeout(temporizadorInicio)
-            window.clearInterval(intervalo)
-
-            if (temporizadorReconexion !== undefined) {
-                window.clearTimeout(temporizadorReconexion)
-            }
-
-            controller.abort()
-
-            void conexion.stop()
-        }
-    }, [subastaId, subastaIdValido, usuarioId])
+        return () => controller.abort()
+    }, [revisionSubastas, subastaId, subastaIdValido, usuarioId, cargando, noEncontrada])
 
     function reintentar() {
         setCargando(true)

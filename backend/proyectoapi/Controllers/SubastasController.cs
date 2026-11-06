@@ -2,6 +2,8 @@ using Application.DTOs.Subasta;
 using Microsoft.AspNetCore.Mvc;
 using Application.UseCases.Subastas;
 using Application.IRepository.IQuery;
+using Infrastructure.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace proyectoapi.Controllers
 {
@@ -13,13 +15,17 @@ namespace proyectoapi.Controllers
         private readonly IObtenerSubastasUseCase _obtenerSubastasUseCase;
         private readonly IObtenerSubastaPorIdUseCase _obtenerSubastaPorIdUseCase;
         private readonly ISubastaQuery _subastaQuery;
+        private readonly IHubContext<SubastaHub> _hubContext;
+        private readonly ILogger<SubastasController> _logger;
 
-        public SubastasController(ICrearSubastaUseCase crearSubastaUseCase, IObtenerSubastasUseCase obtenerSubastasUseCase, IObtenerSubastaPorIdUseCase obtenerSubastaPorIdUseCase, ISubastaQuery subastaQuery)
+        public SubastasController(ICrearSubastaUseCase crearSubastaUseCase, IObtenerSubastasUseCase obtenerSubastasUseCase, IObtenerSubastaPorIdUseCase obtenerSubastaPorIdUseCase, ISubastaQuery subastaQuery, IHubContext<SubastaHub> hubContext, ILogger<SubastasController> logger)
         {
             _crearSubastaUseCase = crearSubastaUseCase;
             _obtenerSubastasUseCase = obtenerSubastasUseCase;
             _obtenerSubastaPorIdUseCase = obtenerSubastaPorIdUseCase;
             _subastaQuery = subastaQuery;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         // GET: api/v1/subastas
@@ -75,6 +81,14 @@ namespace proyectoapi.Controllers
                 return BadRequest(ModelState);
             }
             await _crearSubastaUseCase.EjecutarAsync(dto);
+            try
+            {
+                await _hubContext.Clients.All.SendAsync("SubastaCreada");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "La subasta se creo, pero fallo la notificacion SignalR.");
+            }
             return StatusCode(201, new { mensaje = "Subasta creada exitosamente." });
         }
     }

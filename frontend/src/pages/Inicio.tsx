@@ -10,6 +10,7 @@ import {
   type Subasta,
 } from '../subastas/subasta'
 import '../subastas/subastas.css'
+import { useTiempoReal } from '../tiempo-real/TiempoRealContext'
 import '../styles/home.css'
 
 type SeccionSubastasProps = {
@@ -48,6 +49,7 @@ function Inicio() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [intento, setIntento] = useState(0)
+  const { revisionSubastas } = useTiempoReal()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -55,6 +57,7 @@ function Inicio() {
     obtenerSubastas(controller.signal)
       .then((datos) => {
         setSubastas(datos)
+        setError('')
         setCargando(false)
       })
       .catch((errorCarga: unknown) => {
@@ -65,7 +68,7 @@ function Inicio() {
       })
 
     return () => controller.abort()
-  }, [intento])
+  }, [intento, revisionSubastas])
 
   function reintentar() {
     setCargando(true)

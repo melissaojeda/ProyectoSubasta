@@ -4,12 +4,15 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App'
 import { SesionProvider } from './sesion/SesionContext'
+import { TiempoRealProvider } from './tiempo-real/TiempoRealContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <SesionProvider>
-        <App />
+        <TiempoRealProvider>
+          <App />
+        </TiempoRealProvider>
       </SesionProvider>
     </BrowserRouter>
   </StrictMode>,

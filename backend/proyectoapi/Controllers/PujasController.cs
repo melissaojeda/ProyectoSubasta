@@ -15,13 +15,15 @@ namespace proyectoapi.Controllers
         private readonly IPujaQuery _pujaQuery;
         private readonly IHubContext<SubastaHub> _hubContext;
         private readonly ISubastaQuery _subastaQuery;
+        private readonly ILogger<PujasController> _logger;
 
-        public PujasController(ICrearPujaUseCase crearPujaUseCase, IPujaQuery pujaQuery, IHubContext<SubastaHub> hubContext, ISubastaQuery subastaQuery)
+        public PujasController(ICrearPujaUseCase crearPujaUseCase, IPujaQuery pujaQuery, IHubContext<SubastaHub> hubContext, ISubastaQuery subastaQuery, ILogger<PujasController> logger)
         {
             _crearPujaUseCase = crearPujaUseCase;
             _pujaQuery = pujaQuery;
             _hubContext = hubContext;
             _subastaQuery = subastaQuery;
+            _logger = logger;
         }
 
         // POST: api/v1/subastas/{subastaId}/pujas
@@ -36,18 +38,27 @@ namespace proyectoapi.Controllers
             // Ejecuta el caso de uso que valida y coordina la creación de la puja.
             await _crearPujaUseCase.EjecutarAsync(subastaId, dto);
 
-            var subastaActualizada = await _subastaQuery.GetByIdAsync(subastaId);
-
-            // Emite la notificación en tiempo real vía SignalR
-            await _hubContext.Clients
-            .Group(subastaId.ToString())
-            .SendAsync("NuevaPujaRecibida", new
+            try
             {
-                SubastaId = subastaId,
-                CompradorId = dto.CompradorId,
-                Monto = dto.Monto,
-                FechaFin = subastaActualizada?.FechaFin
-            });
+                var subastaActualizada = await _subastaQuery.GetByIdAsync(subastaId);
+
+                await _hubContext.Clients
+                    .All
+                    .SendAsync("NuevaPujaRecibida", new
+                    {
+                        SubastaId = subastaId,
+                        Monto = dto.Monto,
+                        FechaFin = subastaActualizada?.FechaFin
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "La puja fue confirmada, pero falló la notificación SignalR de la subasta {SubastaId}.",
+                    subastaId
+                );
+            }
 
             return StatusCode(201, new { mensaje = "Puja realizada con éxito." });
         }

@@ -101,12 +101,43 @@ npm run lint
 
 ## Actualizaciones en tiempo real
 
-La pantalla de detalle de una subasta utiliza SignalR mediante `/hubs/subasta` y recibe los eventos `NuevaPujaRecibida` y `SubastaFinalizada`.
+El frontend utiliza una conexión compartida a SignalR mediante el hub `/hubs/subasta`, administrada por `frontend/src/tiempo-real/TiempoRealContext.tsx` y habilitada desde `frontend/src/main.tsx`.
 
-El cliente dispone de reconexión automática y mantiene consultas periódicas (*polling*) como respaldo:
+Cuando el backend confirma una operación, publica un evento. El cliente lo recibe y vuelve a consultar la API para obtener los datos actualizados; los eventos no reemplazan a la base de datos como fuente de información.
 
-- **Con SignalR conectado:** actualización de respaldo aproximadamente cada 30 segundos.
-- **Sin SignalR:** actualización aproximadamente cada 2,5 segundos.
+| Evento SignalR | Cuándo se emite | Datos que se refrescan en el frontend |
+|---|---|---|
+| `NuevaPujaRecibida` | Después de registrar una puja | Subastas (Inicio, Catálogo, Detalle y Mi actividad) y billeteras |
+| `SubastaActivada` | Cuando el worker activa una subasta programada | Subastas y sus estados |
+| `SubastaFinalizada` | Cuando el worker confirma el cierre | Subastas, Mi actividad y billeteras |
+| `SubastaCreada` | Después de guardar una publicación | Listados de subastas y publicaciones del usuario |
+| `BilleteraActualizada` | Después de confirmar un depósito | Saldo e historial de movimientos en Billetera |
+
+El servidor envía avisos generales sin incluir saldos ni datos personales en esos eventos. Cada pantalla abierta solicita la información que necesita a los endpoints de la API.
+
+El detalle también muestra avisos para cambios de estado, pujas superadas y prórrogas de cierre.
+
+### Mecanismos de actualización y recuperación
+
+- **SignalR conectado:** las pantallas abiertas se refrescan al recibir eventos, sin esperar al siguiente intervalo.
+- **Conexión activa sin eventos:** el cliente mantiene una consulta de respaldo aproximadamente cada **30 segundos**.
+- **Conexión desconectada:** el cliente intenta recuperar la conexión y consulta la API aproximadamente cada **2,5 segundos**, mientras el backend esté disponible.
+- **Backend detenido:** ni SignalR ni las consultas HTTP pueden obtener información nueva. La recuperación de la interfaz después de reiniciar el backend debe comprobarse por separado; durante las pruebas locales se observó que algunas pantallas podían requerir **F5** para salir de un error persistente.
+
+El `SubastaWorker` verifica periódicamente las activaciones y los cierres de subastas, en intervalos de aproximadamente **10 segundos**. SignalR notifica después de que se haya confirmado el cambio correspondiente.
+
+### Verificaciones funcionales
+
+Se realizaron pruebas manuales de:
+
+- Actualización de pujas en el detalle y el catálogo.
+- Actualización de billeteras al registrar y superar ofertas.
+- Actualización de saldos y movimientos después de depósitos.
+- Aparición automática de nuevas publicaciones.
+- Activación automática de subastas.
+- Finalización de subastas y actualización de sus datos.
+
+La prueba de recuperación automática de la interfaz tras reiniciar el backend no quedó confirmada.
 
 La sesión se gestiona actualmente desde el frontend. **No se ha implementado autenticación JWT.**
 

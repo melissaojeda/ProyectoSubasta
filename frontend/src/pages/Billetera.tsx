@@ -18,6 +18,7 @@ import MensajeEstado from '../components/common/MensajeEstado'
 import Notificacion from '../components/common/Notificacion'
 import { useSesion } from '../sesion/SesionContext'
 import { formatearFechaHora, formatearMonto } from '../subastas/subasta'
+import { useTiempoReal } from '../tiempo-real/TiempoRealContext'
 import '../styles/account.css'
 
 type ModalCargaSaldoProps = {
@@ -185,6 +186,7 @@ function Billetera() {
   const [error, setError] = useState('')
   const [notificacion, setNotificacion] = useState('')
   const [intento, setIntento] = useState(0)
+  const { revisionBilleteras } = useTiempoReal()
 
   useEffect(() => {
     if (!usuario) return
@@ -209,7 +211,7 @@ function Billetera() {
       })
 
     return () => controller.abort()
-  }, [intento, usuario])
+  }, [intento, usuario, revisionBilleteras])
 
   const retencionActiva = movimientos.find(
     (movimiento) => movimiento.tipo === 'RETENCION_PUJA',

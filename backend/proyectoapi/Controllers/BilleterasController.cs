@@ -2,6 +2,8 @@ using Application.IRepository.ICommand;
 using Application.IRepository.IQuery;
 using Microsoft.AspNetCore.Mvc;
 using Application.UseCases.Billeteras;
+using Infrastructure.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace proyectoapi.Controllers
 {
@@ -12,12 +14,16 @@ namespace proyectoapi.Controllers
         private readonly IDepositarBilleteraUseCase _depositarBilleteraUseCase;
         private readonly IBilleteraQuery _billeteraQuery;
         private readonly ITransaccionLedgerQuery _transaccionLedgerQuery;
+        private readonly IHubContext<SubastaHub> _hubContext;
+        private readonly ILogger<BilleterasController> _logger;
 
-        public BilleterasController(IDepositarBilleteraUseCase depositarBilleteraUseCase, IBilleteraQuery billeteraQuery, ITransaccionLedgerQuery transaccionLedgerQuery)
+        public BilleterasController(IDepositarBilleteraUseCase depositarBilleteraUseCase, IBilleteraQuery billeteraQuery, ITransaccionLedgerQuery transaccionLedgerQuery, IHubContext<SubastaHub> hubContext, ILogger<BilleterasController> logger)
         {
             _depositarBilleteraUseCase = depositarBilleteraUseCase;
             _billeteraQuery = billeteraQuery;
             _transaccionLedgerQuery = transaccionLedgerQuery;
+            _hubContext = hubContext;
+            _logger = logger;
         }
 
         // GET: api/v1/billeteras/{id}
@@ -58,6 +64,15 @@ namespace proyectoapi.Controllers
         public async Task<IActionResult> Depositar(int billeteraId, [FromBody] SolicitudDepositoDTO dto)
         {   
             await _depositarBilleteraUseCase.EjecutarAsync(billeteraId, dto.Monto);
+            try
+            {
+                // Aviso general: ninguna informacion financiera en el mensaje.
+                await _hubContext.Clients.All.SendAsync("BilleteraActualizada");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "El deposito se confirmo, pero fallo SignalR.");
+            }
             return Ok(new { mensaje = $"Se acreditaron ${dto.Monto} correctamente a la billetera {billeteraId}." });
         }
 
